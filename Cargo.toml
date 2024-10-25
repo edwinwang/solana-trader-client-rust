@@ -1,0 +1,26 @@
+[package]
+name = "solana-trader-client-rust"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[example]]
+name = "grpc"
+path = "src/examples/grpc.rs"
+
+[dependencies]
+anyhow = "1.0.91"
+lazy_static = "1.5.0"
+reqwest = "0.12.4"
+serde_json = "1.0.132"
+solana-sdk = "2.0.0"
+solana-trader-proto = { path = "../../solana-trader-proto/rust" }
+thiserror = "1.0.65"
+tokio = { version = "1.41.0", features = ["full"] }
+tonic = { version = "0.12.3", features = ["tls", "tls-webpki-roots"] }
+tower = "0.5.1"
+
+[patch.crates-io.curve25519-dalek]
+git = "https://github.com/anza-xyz/curve25519-dalek.git"
+rev = "b500cdc2a920cd5bff9e2dd974d7b97349d61464"
