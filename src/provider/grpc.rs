@@ -1,5 +1,7 @@
+use rustls::crypto::ring::default_provider;
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
+use std::collections::HashMap;
 use std::time::Duration;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
@@ -14,8 +16,19 @@ use crate::provider::{
 
 #[derive(Clone)]
 struct AuthInterceptor {
-    auth_header: String,
+    headers: HashMap<&'static str, String>,
     enabled: bool,
+}
+
+impl AuthInterceptor {
+    fn new(auth_header: String, enabled: bool) -> Self {
+        let mut headers = HashMap::new();
+        headers.insert("authorization", auth_header);
+        headers.insert("x-sdk", "rust-client".to_string());
+        headers.insert("x-sdk-version", env!("CARGO_PKG_VERSION").to_string());
+
+        Self { headers, enabled }
+    }
 }
 
 impl Interceptor for AuthInterceptor {
@@ -24,11 +37,13 @@ impl Interceptor for AuthInterceptor {
         mut request: tonic::Request<()>,
     ) -> std::result::Result<tonic::Request<()>, tonic::Status> {
         if self.enabled {
-            request.metadata_mut().insert(
-                "authorization",
-                MetadataValue::try_from(&self.auth_header)
-                    .map_err(|e| tonic::Status::internal(e.to_string()))?,
-            );
+            for (key, value) in &self.headers {
+                request.metadata_mut().insert(
+                    *key,
+                    MetadataValue::try_from(value)
+                        .map_err(|e| tonic::Status::internal(e.to_string()))?,
+                );
+            }
         }
         Ok(request)
     }
@@ -84,6 +99,13 @@ impl GrpcClient {
     }
 
     pub async fn with_config(config: GrpcClientConfig) -> Result<Self> {
+        default_provider().install_default().map_err(|e| {
+            ClientError::new(
+                "Failed to install crypto provider:",
+                anyhow::anyhow!("{:?}", e),
+            )
+        })?;
+
         let channel = Channel::from_shared(config.endpoint.clone())
             .map_err(|e| ClientError::new("Error: invalid uri:", e))?
             .timeout(Duration::from_secs(30))
@@ -93,10 +115,7 @@ impl GrpcClient {
             .await
             .map_err(|e| ClientError::new("Error: connect:", e))?;
 
-        let interceptor: AuthInterceptor = AuthInterceptor {
-            auth_header: config.auth_header.clone(),
-            enabled: !config.disable_auth,
-        };
+        let interceptor = AuthInterceptor::new(config.auth_header.clone(), !config.disable_auth);
 
         let client = api::api_client::ApiClient::with_interceptor(channel, interceptor);
 
