@@ -10,7 +10,13 @@ mod tests {
 
     const ENDPOINT: &str = "https://ny.solana.dex.blxrbdn.com";
 
-    #[test_case("So11111111111111111111111111111111111111112", "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", 0.1, 0.2 ; "BTC to USDC with higher slippage")]
+    #[test_case(
+        "So11111111111111111111111111111111111111112",
+        "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        0.1,
+        0.2;
+        "BTC to USDC with higher slippage"
+    )]
     #[tokio::test]
     #[ignore]
     async fn test_raydium_quotes_grpc(
