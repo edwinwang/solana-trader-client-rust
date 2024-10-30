@@ -1,4 +1,3 @@
-use futures_util::Stream;
 use rustls::crypto::ring::default_provider;
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;

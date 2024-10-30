@@ -3,20 +3,6 @@ name = "solana-trader-client-rust"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[[example]]
-name = "grpc"
-path = "src/examples/grpc.rs"
-
-[[example]]
-name = "ws"
-path = "src/examples/ws.rs"
-
-[[example]]
-name = "http"
-path = "src/examples/http.rs"
-
 [dependencies]
 anyhow = "1.0.91"
 futures-util = "0.3.31"
@@ -40,6 +26,8 @@ webpki-roots = "0.26.6"
 ring = "0.17.8"
 rustls = { version = "0.23.16", features = ["ring"] }
 tokio-stream = { version = "0.1.16", features = ["sync"] }
+
+[dev-dependencies]
 test-case = "3.3.1"
 
 [patch.crates-io.curve25519-dalek]

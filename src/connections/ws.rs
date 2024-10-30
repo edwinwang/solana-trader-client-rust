@@ -431,7 +431,7 @@ impl WS {
                     }
                 }
 
-                serde_json::from_value(modified_value).map_err(|e| ClientError::Serialization(e))
+                serde_json::from_value(modified_value).map_err(ClientError::Serialization)
             }),
         )
     }

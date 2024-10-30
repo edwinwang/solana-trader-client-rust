@@ -1,20 +1,19 @@
 #[cfg(test)]
 mod tests {
-    use std::{error::Error, time::Duration};
+    use std::error::Error;
 
     use futures_util::StreamExt;
     use solana_trader_client_rust::provider::grpc::GrpcClient;
     use solana_trader_proto::api;
     use test_case::test_case;
-    use tokio::{sync::oneshot, time::timeout};
+    use tokio::sync::oneshot;
 
     const ENDPOINT: &str = "https://ny.solana.dex.blxrbdn.com";
-    const TIMEOUT_DURATION: Duration = Duration::from_secs(10);
 
-    #[test_case("BTC", "USDC", 0.1, 0.2 ; "BTC to USDC with higher slippage")]
+    #[test_case("So11111111111111111111111111111111111111112", "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", 0.1, 0.2 ; "BTC to USDC with higher slippage")]
     #[tokio::test]
     #[ignore]
-    async fn test_raydium_quotes(
+    async fn test_raydium_quotes_grpc(
         in_token: &str,
         out_token: &str,
         in_amount: f64,
@@ -38,14 +37,15 @@ mod tests {
         Ok(())
     }
 
+    // NOTE: trade stream is very low in activity, so this will run for a while.
     #[test_case(
-        vec![api::Project::PRaydium], 
+        vec![api::Project::PRaydium],
         vec!["So11111111111111111111111111111111111111112".to_string()] ; 
         "raydium SOL price stream"
     )]
     #[tokio::test]
     #[ignore]
-    async fn test_price_stream(
+    async fn test_price_stream_grpc(
         projects: Vec<api::Project>,
         tokens: Vec<String>,
     ) -> Result<(), Box<dyn Error>> {
@@ -67,7 +67,6 @@ mod tests {
         let response = rx.await?.map_err(|e| Box::new(e) as Box<dyn Error>)?;
         assert!(response.price.unwrap().buy > 0.0);
 
-        // Clean up
         handle.abort();
 
         Ok(())
