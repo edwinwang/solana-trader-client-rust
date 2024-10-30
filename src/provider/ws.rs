@@ -8,6 +8,7 @@ use crate::provider::{
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
 use tokio::time::timeout;
+use tokio_stream::Stream;
 
 const INITIAL_TIMEOUT: Duration = Duration::from_secs(10);
 
@@ -87,13 +88,38 @@ impl WebSocketClient {
         &self,
         request: &api::GetRaydiumQuotesRequest,
     ) -> Result<api::GetRaydiumQuotesResponse> {
-        // Add timeout to the request
-        let response = self
-            .conn
-            .request("GetRaydiumQuotes", request)
-            .await
-            .map_err(|e| ClientError::new("Request timeout:", e))?;
+        // Convert proto message to JSON value
+        let params = serde_json::to_value(request)
+            .map_err(|e| ClientError::new("Failed to serialize request:", e))?;
 
-        Ok(response)
+        self.conn.request("GetRaydiumQuotes", params).await
+    }
+
+    pub async fn get_trades_stream(
+        &self,
+        market: String,
+        limit: u32,
+        project: api::Project,
+    ) -> Result<impl Stream<Item = Result<api::GetTradesStreamResponse>>> {
+        let request = api::GetTradesRequest {
+            market,
+            limit,
+            project: project as i32,
+        };
+
+        self.conn.stream_proto("GetTradesStream", &request).await
+    }
+
+    pub async fn get_prices_stream(
+        &self,
+        projects: Vec<api::Project>,
+        tokens: Vec<String>,
+    ) -> Result<impl Stream<Item = Result<api::GetPricesStreamResponse>>> {
+        let request = api::GetPricesStreamRequest {
+            projects: projects.iter().map(|&p| p as i32).collect(),
+            tokens,
+        };
+
+        self.conn.stream_proto("GetPricesStream", &request).await
     }
 }

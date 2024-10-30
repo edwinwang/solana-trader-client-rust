@@ -1,14 +1,17 @@
 use futures_util::{SinkExt, StreamExt};
 use rustls::crypto::ring::default_provider;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::{any::Any, time::Duration};
 use tokio::net::TcpStream;
-use tokio::sync::{broadcast, Mutex};
+use tokio::sync::{broadcast, mpsc, Mutex};
 use tokio::time::timeout;
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
+use tokio_stream::Stream;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::protocol::WebSocketConfig;
 use tokio_tungstenite::{connect_async_tls_with_config, Connector};
@@ -28,7 +31,7 @@ pub const PING_WRITE_WAIT: Duration = Duration::from_secs(10);
 #[derive(Debug)]
 pub struct SubscriptionEntry<T> {
     pub active: bool,
-    pub sender: broadcast::Sender<T>,
+    pub sender: mpsc::Sender<T>,
 }
 
 pub trait AnySubscription: Send + Sync {
@@ -65,12 +68,19 @@ struct RequestTracker {
     ch: tokio::sync::mpsc::Sender<ResponseUpdate>,
 }
 
+#[derive(Serialize)]
+struct StreamRequest<T> {
+    stream_name: String,
+    params: T,
+}
+
 pub struct WS {
     stream: Arc<Mutex<WebSocketStream<tokio_tungstenite::MaybeTlsStream<TcpStream>>>>,
     write_tx: tokio::sync::mpsc::Sender<Message>,
     shutdown_tx: broadcast::Sender<()>,
     request_id: AtomicU64,
     request_map: Arc<Mutex<HashMap<u64, RequestTracker>>>,
+    subscriptions: Arc<Mutex<HashMap<String, Box<dyn AnySubscription + Send + Sync>>>>, // Add this
 }
 
 impl WS {
@@ -90,6 +100,7 @@ impl WS {
             shutdown_tx,
             request_id: AtomicU64::new(0),
             request_map: Arc::new(Mutex::new(HashMap::new())),
+            subscriptions: Arc::new(Mutex::new(HashMap::new())),
         };
 
         ws.start_loops(stream.clone(), write_rx);
@@ -102,8 +113,8 @@ impl WS {
         stream: Arc<Mutex<WebSocketStream<tokio_tungstenite::MaybeTlsStream<TcpStream>>>>,
         mut write_rx: tokio::sync::mpsc::Receiver<Message>,
     ) {
+        // TODO: add shutdown channels
         // Write loop
-        // let mut shutdown_rx: broadcast::Receiver<()> = self.shutdown_tx.subscribe();
         let write_stream = stream.clone();
         tokio::spawn(async move {
             while let Some(msg) = write_rx.recv().await {
@@ -119,23 +130,71 @@ impl WS {
         // Read loop
         let read_stream = stream.clone();
         let request_map = self.request_map.clone();
+        let subscriptions = self.subscriptions.clone();
         tokio::spawn(async move {
             loop {
                 let mut stream = read_stream.lock().await;
-
-                // Use a short timeout for reading
                 match timeout(Duration::from_millis(100), stream.next()).await {
                     Ok(Some(Ok(Message::Text(text)))) => {
-                        if let Ok(value) = serde_json::from_str::<Value>(&text) {
-                            if let Some(id) = value.get("id").and_then(|id| id.as_u64()) {
-                                let request_map = request_map.lock().await;
-                                if let Some(tracker) = request_map.get(&id) {
-                                    let update = ResponseUpdate { response: text };
-                                    if let Err(e) = tracker.ch.send(update).await {
-                                        println!("Failed to send response: {}", e);
-                                    }
+                        let value: Value = match serde_json::from_str(&text) {
+                            Ok(v) => v,
+                            Err(e) => {
+                                println!("Failed to parse message as JSON: {}", e);
+                                continue;
+                            }
+                        };
+
+                        if let Some(id) = value.get("id").and_then(|id| id.as_u64()) {
+                            let request_map = request_map.lock().await;
+                            if let Some(tracker) = request_map.get(&id) {
+                                let update = ResponseUpdate { response: text };
+                                if let Err(e) = tracker.ch.send(update).await {
+                                    println!("Failed to send response: {}", e);
                                 }
                             }
+                            continue;
+                        }
+
+                        let subscription_id = match value
+                            .get("params")
+                            .and_then(|params| params.get("subscription"))
+                            .and_then(|sub| sub.as_str())
+                        {
+                            Some(id) => id,
+                            None => {
+                                println!("No subscription ID found in params");
+                                continue;
+                            }
+                        };
+
+                        let subs = subscriptions.lock().await;
+                        let sub = match subs.get(subscription_id) {
+                            Some(s) => s,
+                            None => {
+                                println!("No subscription found for ID: {}", subscription_id);
+                                continue;
+                            }
+                        };
+
+                        if !sub.is_active() {
+                            println!("Subscription {} is not active", subscription_id);
+                            continue;
+                        }
+
+                        if let Some(result) =
+                            value.get("params").and_then(|params| params.get("result"))
+                        {
+                            if let Some(entry) =
+                                sub.as_any().downcast_ref::<SubscriptionEntry<Value>>()
+                            {
+                                if let Err(e) = entry.sender.send(result.clone()).await {
+                                    println!("Failed to send subscription update: {}", e);
+                                }
+                            } else {
+                                println!("Failed to downcast subscription entry");
+                            }
+                        } else {
+                            println!("No result field in subscription message");
                         }
                     }
                     Ok(Some(Ok(Message::Close(_)))) => {
@@ -149,7 +208,7 @@ impl WS {
                         println!("Read loop: Stream ended");
                         break;
                     }
-                    Err(_) => continue, // Timeout, just try again
+                    Err(_) => continue,
                     _ => continue,
                 }
             }
@@ -178,15 +237,11 @@ impl WS {
         });
     }
 
-    pub async fn request<Req, Resp>(&self, method: &str, request: &Req) -> Result<Resp>
+    pub async fn request<T>(&self, method: &str, params: Value) -> Result<T>
     where
-        Req: prost::Message + serde::Serialize,
-        Resp: prost::Message + Default + serde::de::DeserializeOwned,
+        T: DeserializeOwned,
     {
         let request_id = self.request_id.fetch_add(1, Ordering::SeqCst);
-
-        let params = serde_json::to_value(request)
-            .map_err(|e| ClientError::new("Failed to serialize request:", e))?;
 
         let request_json = json!({
             "jsonrpc": "2.0",
@@ -232,10 +287,8 @@ impl WS {
                     )
                 })?;
 
-                let resp = serde_json::from_value(result.clone())
-                    .map_err(|e| ClientError::new("Failed to parse result:", e))?;
-
-                Ok(resp)
+                serde_json::from_value(result.clone())
+                    .map_err(|e| ClientError::new("Failed to parse result:", e))
             }
             Ok(None) => Err(ClientError::new(
                 "Channel closed",
@@ -316,6 +369,71 @@ impl WS {
                 }
             }
         }
+    }
+
+    pub async fn stream_proto<Req, Resp>(
+        &self,
+        method: &str,
+        request: &Req,
+    ) -> Result<impl Stream<Item = Result<Resp>> + Unpin>
+    where
+        Req: prost::Message + serde::Serialize,
+        Resp: prost::Message + Default + DeserializeOwned + Send + Clone + 'static,
+    {
+        let (tx, rx) = mpsc::channel::<Value>(SUBSCRIPTION_BUFFER);
+
+        let params = serde_json::to_value(request)
+            .map_err(|e| ClientError::new("Failed to serialize request:", e))?;
+
+        let params_array = json!([method, params]);
+        let subscription_id: String = self.request("subscribe", params_array).await?;
+
+        {
+            let mut subs = self.subscriptions.lock().await;
+            subs.insert(
+                subscription_id,
+                Box::new(SubscriptionEntry {
+                    active: true,
+                    sender: tx,
+                }),
+            );
+        }
+
+        Ok(
+            tokio_stream::wrappers::ReceiverStream::new(rx).map(|value: Value| -> Result<Resp> {
+                // TODO: these are hacks, we should try to define the generated proto better
+                // Convert slot str -> i64
+                let mut modified_value = value;
+
+                if let Some(slot) = modified_value.get("slot") {
+                    if let Some(slot_str) = slot.as_str() {
+                        if let Ok(slot_num) = slot_str.parse::<i64>() {
+                            modified_value["slot"] = json!(slot_num);
+                        }
+                    }
+                }
+
+                // Convert project str -> i32
+                if let Some(price) = modified_value.get_mut("price") {
+                    if let Some(project) = price.get_mut("project") {
+                        if let Some(project_str) = project.as_str() {
+                            let project_num = match project_str {
+                                "P_UNKNOWN" => 0,
+                                "P_ALL" => 1,
+                                "P_JUPITER" => 2,
+                                "P_RAYDIUM" => 3,
+                                "P_SERUM" => 4,
+                                "P_OPENBOOK" => 5,
+                                _ => 0,
+                            };
+                            *project = json!(project_num);
+                        }
+                    }
+                }
+
+                serde_json::from_value(modified_value).map_err(|e| ClientError::Serialization(e))
+            }),
+        )
     }
 
     pub async fn close(self) -> Result<()> {

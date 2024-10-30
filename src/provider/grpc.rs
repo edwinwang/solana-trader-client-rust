@@ -1,3 +1,4 @@
+use futures_util::Stream;
 use rustls::crypto::ring::default_provider;
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
@@ -5,8 +6,9 @@ use std::collections::HashMap;
 use std::time::Duration;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
+use tonic::Streaming;
 use tonic::{
-    metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel,
+    metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel, Request,
 };
 
 use crate::provider::{
@@ -71,7 +73,7 @@ impl GrpcClientConfig {
             .map(|pk| Keypair::from_base58_string(&pk));
 
         let auth_header = std::env::var("AUTH_HEADER").map_err(|_| {
-            ClientError::from(String::from("PRIVATE_KEY environment variable not set"))
+            ClientError::from(String::from("AUTH_HEADER environment variable not set"))
         })?;
 
         Ok(Self {
@@ -134,6 +136,25 @@ impl GrpcClient {
             .get_raydium_quotes(tonic::Request::new(request.clone()))
             .await
             .map_err(|e| ClientError::new("GetRaydiumQuotes error:", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_prices_stream(
+        &mut self,
+        projects: Vec<api::Project>,
+        tokens: Vec<String>,
+    ) -> Result<Streaming<api::GetPricesStreamResponse>> {
+        let request = Request::new(api::GetPricesStreamRequest {
+            projects: projects.iter().map(|&p| p as i32).collect(),
+            tokens,
+        });
+
+        let response = self
+            .client
+            .get_prices_stream(request)
+            .await
+            .map_err(|e| ClientError::new("GetPricesStream error:", e))?;
 
         Ok(response.into_inner())
     }
