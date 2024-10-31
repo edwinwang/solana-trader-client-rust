@@ -45,7 +45,7 @@ impl ClientError {
     }
 }
 
-// Example usage:
+// Custom errors example usage
 #[cfg(test)]
 mod tests {
     use super::*;

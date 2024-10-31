@@ -5,27 +5,15 @@ use reqwest::{
 use serde::de::DeserializeOwned;
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
-use std::time::Duration;
 
-use crate::common::{get_base_url_from_env, http_endpoint};
+use crate::common::{get_base_url_from_env, http_endpoint, DEFAULT_TIMEOUT};
 use crate::provider::error::{ClientError, Result};
-
-const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
-
-#[derive(Debug)]
-pub struct HTTPClient {
-    client: Client,
-    base_url: String,
-    private_key: Option<Keypair>,
-    auth_header: String,
-}
 
 #[derive(Debug)]
 pub struct HTTPClientConfig {
     pub endpoint: String,
     pub private_key: Option<Keypair>,
     pub auth_header: String,
-    pub timeout: Option<Duration>,
 }
 
 impl HTTPClientConfig {
@@ -44,9 +32,13 @@ impl HTTPClientConfig {
             endpoint: http_endpoint(&base, secure),
             private_key,
             auth_header,
-            timeout: Some(DEFAULT_TIMEOUT),
         })
     }
+}
+
+pub struct HTTPClient {
+    client: Client,
+    base_url: String,
 }
 
 impl HTTPClient {
@@ -73,15 +65,13 @@ impl HTTPClient {
 
         let client = Client::builder()
             .default_headers(headers)
-            .timeout(config.timeout.unwrap_or(DEFAULT_TIMEOUT))
+            .timeout(DEFAULT_TIMEOUT)
             .build()
             .map_err(|e| ClientError::new("Failed to create HTTP client", e))?;
 
         Ok(Self {
             client,
             base_url: config.endpoint,
-            private_key: config.private_key,
-            auth_header: config.auth_header,
         })
     }
 
@@ -111,8 +101,6 @@ impl HTTPClient {
             "{}/api/v2/raydium/quotes?inToken={}&outToken={}&inAmount={}&slippage={}",
             self.base_url, request.in_token, request.out_token, request.in_amount, request.slippage
         );
-
-        println!("Making request to: {}", url); // Debug line
 
         let response = self
             .client

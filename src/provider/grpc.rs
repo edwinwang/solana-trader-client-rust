@@ -48,13 +48,12 @@ impl Interceptor for AuthInterceptor {
     }
 }
 
-#[derive(Debug)]
-pub struct GrpcClient {
-    client: api::api_client::ApiClient<InterceptedService<Channel, AuthInterceptor>>,
-    private_key: Option<Keypair>,
+impl Default for GrpcClientConfig {
+    fn default() -> Self {
+        Self::try_from_env().expect("Failed to load config from environment")
+    }
 }
 
-#[derive(Debug)]
 pub struct GrpcClientConfig {
     pub endpoint: String,
     pub private_key: Option<Keypair>,
@@ -85,10 +84,9 @@ impl GrpcClientConfig {
     }
 }
 
-impl Default for GrpcClientConfig {
-    fn default() -> Self {
-        Self::try_from_env().expect("Failed to load config from environment")
-    }
+#[derive(Debug)]
+pub struct GrpcClient {
+    client: api::api_client::ApiClient<InterceptedService<Channel, AuthInterceptor>>,
 }
 
 impl GrpcClient {
@@ -123,10 +121,7 @@ impl GrpcClient {
 
         let client = api::api_client::ApiClient::with_interceptor(channel, interceptor);
 
-        Ok(Self {
-            client,
-            private_key: config.private_key,
-        })
+        Ok(Self { client })
     }
 
     pub async fn get_raydium_quotes(

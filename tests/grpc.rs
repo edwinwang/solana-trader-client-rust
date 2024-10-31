@@ -3,14 +3,17 @@ mod tests {
     use std::error::Error;
 
     use futures_util::StreamExt;
-    use solana_trader_client_rust::provider::grpc::GrpcClient;
+    use solana_trader_client_rust::{
+        common::{USDC, WRAPPED_SOL},
+        provider::grpc::GrpcClient,
+    };
     use solana_trader_proto::api;
     use test_case::test_case;
     use tokio::sync::oneshot;
 
     #[test_case(
-        "So11111111111111111111111111111111111111112",
-        "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        WRAPPED_SOL,
+        USDC,
         0.1,
         0.2;
         "BTC to USDC with higher slippage"
@@ -45,7 +48,7 @@ mod tests {
     // TODO: investigate intermittent failure. Timeout?
     #[test_case(
         vec![api::Project::PRaydium],
-        vec!["So11111111111111111111111111111111111111112".to_string()] ; 
+        vec![WRAPPED_SOL.to_string()] ;
         "raydium SOL price stream"
     )]
     #[tokio::test]

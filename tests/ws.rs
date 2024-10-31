@@ -1,17 +1,18 @@
 #[cfg(test)]
 mod tests {
     use futures_util::StreamExt;
-    use solana_trader_client_rust::provider::ws::WebSocketClient;
+    use solana_trader_client_rust::{
+        common::{USDC, WRAPPED_SOL},
+        provider::ws::WebSocketClient,
+    };
     use solana_trader_proto::api;
     use std::{error::Error, time::Duration};
     use test_case::test_case;
     use tokio::time::timeout;
 
-    const ENDPOINT: &str = "wss://ny.solana.dex.blxrbdn.com/ws";
-
     #[test_case(
-        "So11111111111111111111111111111111111111112",
-        "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        WRAPPED_SOL,
+        USDC,
         0.01,
         5.0 ;
         "SOL to USDC quote"
@@ -75,7 +76,7 @@ mod tests {
 
     #[test_case(
         vec![api::Project::PRaydium],
-        vec!["So11111111111111111111111111111111111111112".to_string()] ;
+        vec![WRAPPED_SOL.to_string()] ;
         "raydium SOL price stream"
     )]
     #[tokio::test]

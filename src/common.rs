@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 pub const LOCAL: &str = "localhost:9000";
 pub const TESTNET: &str = "solana.dex.bxrtest.com";
 pub const MAINNET_NY: &str = "ny.solana.dex.blxrbdn.com";
@@ -8,8 +10,7 @@ pub const MAINNET_PUMP_NY: &str = "pump-ny.solana.dex.blxrbdn.com";
 pub const WRAPPED_SOL: &str = "So11111111111111111111111111111111111111112";
 pub const USDC: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
-// Market pairs
-pub const SOL_USDC_PAIR: &str = "SOL/USDC";
+pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub fn http_endpoint(base_url: &str, secure: bool) -> String {
     let prefix = if secure { "https" } else { "http" };

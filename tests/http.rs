@@ -1,15 +1,16 @@
 #[cfg(test)]
 mod tests {
-    use solana_trader_client_rust::provider::http::HTTPClient;
+    use solana_trader_client_rust::{
+        common::{USDC, WRAPPED_SOL},
+        provider::http::HTTPClient,
+    };
     use solana_trader_proto::api;
     use std::error::Error;
     use test_case::test_case;
 
-    const ENDPOINT: &str = "https://ny.solana.dex.blxrbdn.com/api/v2/raydium";
-
     #[test_case(
-        "SOL",
-        "USDC",
+        WRAPPED_SOL,
+        USDC,
         1.0,
         0.1 ;
         "SOL to USDC quote via HTTP"

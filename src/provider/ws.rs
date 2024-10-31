@@ -1,19 +1,10 @@
-use std::time::Duration;
-
-use crate::common::{get_base_url_from_env, ws_endpoint, MAINNET_NY};
+use crate::common::{get_base_url_from_env, ws_endpoint, DEFAULT_TIMEOUT};
 use crate::connections::ws::WS;
 use crate::provider::error::{ClientError, Result};
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
 use tokio::time::timeout;
 use tokio_stream::Stream;
-
-const INITIAL_TIMEOUT: Duration = Duration::from_secs(10);
-
-pub struct WebSocketClient {
-    conn: WS,
-    private_key: Option<Keypair>,
-}
 
 pub struct WebSocketConfig {
     pub endpoint: String,
@@ -45,6 +36,10 @@ impl WebSocketConfig {
     }
 }
 
+pub struct WebSocketClient {
+    conn: WS,
+}
+
 impl WebSocketClient {
     pub async fn new(endpoint: Option<String>) -> Result<Self> {
         let mut config = WebSocketConfig::try_from_env()?;
@@ -74,16 +69,13 @@ impl WebSocketClient {
         }
 
         let conn = timeout(
-            INITIAL_TIMEOUT,
+            DEFAULT_TIMEOUT,
             WS::new(config.endpoint.clone(), config.auth_header.clone()),
         )
         .await
         .map_err(|e| ClientError::new("Connection timeout", e))??;
 
-        Ok(Self {
-            conn,
-            private_key: config.private_key,
-        })
+        Ok(Self { conn })
     }
 
     pub async fn get_raydium_quotes(
