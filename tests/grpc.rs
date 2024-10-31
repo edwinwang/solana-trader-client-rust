@@ -8,8 +8,6 @@ mod tests {
     use test_case::test_case;
     use tokio::sync::oneshot;
 
-    const ENDPOINT: &str = "https://ny.solana.dex.blxrbdn.com";
-
     #[test_case(
         "So11111111111111111111111111111111111111112",
         "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
@@ -25,7 +23,7 @@ mod tests {
         in_amount: f64,
         slippage: f64,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut client = GrpcClient::new(ENDPOINT.to_string()).await?;
+        let mut client = GrpcClient::new(None).await?;
 
         let request = api::GetRaydiumQuotesRequest {
             in_token: in_token.to_string(),
@@ -44,6 +42,7 @@ mod tests {
     }
 
     // NOTE: trade stream is very low in activity, so this will run for a while.
+    // TODO: investigate intermittent failure. Timeout?
     #[test_case(
         vec![api::Project::PRaydium],
         vec!["So11111111111111111111111111111111111111112".to_string()] ; 
@@ -58,7 +57,7 @@ mod tests {
         let (tx, rx) = oneshot::channel();
 
         let handle = tokio::spawn(async move {
-            let mut client = GrpcClient::new(ENDPOINT.to_string()).await?;
+            let mut client = GrpcClient::new(None).await?;
 
             let mut stream = client.get_prices_stream(projects, tokens).await?;
 

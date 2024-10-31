@@ -22,7 +22,7 @@ mod tests {
         in_amount: f64,
         slippage: f64,
     ) -> Result<(), Box<dyn Error>> {
-        let client = HTTPClient::new(ENDPOINT.to_string())?;
+        let client = HTTPClient::new(None)?;
 
         let request = api::GetRaydiumQuotesRequest {
             in_token: in_token.to_string(),

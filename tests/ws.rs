@@ -24,7 +24,7 @@ mod tests {
         in_amount: f64,
         slippage: f64,
     ) -> Result<(), Box<dyn Error>> {
-        let client = WebSocketClient::new(ENDPOINT.to_string()).await?;
+        let client = WebSocketClient::new(None).await?;
 
         let request = api::GetRaydiumQuotesRequest {
             in_token: in_token.to_string(),
@@ -44,7 +44,7 @@ mod tests {
         Ok(())
     }
 
-    // NOTE: trade stream is very low in activity, so this will run for a while.
+    // NOTE: trade stream is very low in activity, so this will run for a while and may expire.
     #[test_case(
         "SOL/USDC",
         0,
@@ -58,7 +58,7 @@ mod tests {
         limit: i32,
         project: api::Project,
     ) -> Result<(), Box<dyn Error>> {
-        let ws = WebSocketClient::new(ENDPOINT.to_string()).await?;
+        let ws = WebSocketClient::new(None).await?;
 
         let mut trade_stream = ws
             .get_trades_stream(market.to_string(), limit.try_into().unwrap(), project)
@@ -84,7 +84,7 @@ mod tests {
         projects: Vec<api::Project>,
         tokens: Vec<String>,
     ) -> Result<(), Box<dyn Error>> {
-        let ws = WebSocketClient::new(ENDPOINT.to_string()).await?;
+        let ws = WebSocketClient::new(None).await?;
 
         let stream = ws.get_prices_stream(projects, tokens).await?;
 
