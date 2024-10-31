@@ -7,10 +7,8 @@ use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
 use std::time::Duration;
 
-use crate::provider::{
-    constants::LOCAL_HTTP,
-    error::{ClientError, Result},
-};
+use crate::common::{get_base_url_from_env, http_endpoint};
+use crate::provider::error::{ClientError, Result};
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -40,8 +38,10 @@ impl HTTPClientConfig {
             ClientError::from(String::from("AUTH_HEADER environment variable not set"))
         })?;
 
+        let (base, secure) = get_base_url_from_env();
+
         Ok(Self {
-            endpoint: LOCAL_HTTP.to_string(),
+            endpoint: http_endpoint(&base, secure),
             private_key,
             auth_header,
             timeout: Some(DEFAULT_TIMEOUT),
@@ -50,9 +50,11 @@ impl HTTPClientConfig {
 }
 
 impl HTTPClient {
-    pub fn new(endpoint: String) -> Result<Self> {
+    pub fn new(endpoint: Option<String>) -> Result<Self> {
         let mut config = HTTPClientConfig::try_from_env()?;
-        config.endpoint = endpoint;
+        if let Some(endpoint) = endpoint {
+            config.endpoint = endpoint;
+        }
         Self::with_config(config)
     }
 
@@ -106,7 +108,7 @@ impl HTTPClient {
         request: &api::GetRaydiumQuotesRequest,
     ) -> Result<api::GetRaydiumQuotesResponse> {
         let url = format!(
-            "{}/quotes?inToken={}&outToken={}&inAmount={}&slippage={}",
+            "{}/api/v2/raydium/quotes?inToken={}&outToken={}&inAmount={}&slippage={}",
             self.base_url, request.in_token, request.out_token, request.in_amount, request.slippage
         );
 

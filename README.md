@@ -4,9 +4,31 @@ With the `solana-trader-proto` in the right path:
 
 ``solana-trader-proto = { path = "../../services/solana-trader-proto/rust" }``
 
-**this will be updated to the published crate**
+Change this above line to the path where your proto repo is, for now. **this will be updated to the published crate eventually**
 
 # Running tests
+
+## Environment setup
+set the necessary environment variables:
+
+```bash
+export AUTH_HEADER=<YOUR_AUTH_HEADER>
+export NETWORK=<TARGET_NETWORK>
+export REGION=<TARGET_REGION>
+```
+
+**Available networks:**
+- MAINNET
+- TESTNET
+- LOCAL
+
+**Available regions:**
+- NY
+- UK
+- PUMP
+
+**If no region is defined, the SDK will use NY MAINNET**
+
 Since these tests are networked, they have the ignore flag on by default:
 
 ```rust
@@ -19,6 +41,7 @@ So each test must be called individually:
 ```bash
 cargo test test_raydium_quotes_grpc -- --ignored 
 ```
+
 
 ## Adding new test cases
 Using the `test_case` crate tests are parametrized:
@@ -37,7 +60,8 @@ Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and 
 ```json
 {
     "rust-analyzer.runnables.extraEnv": {
-        "AUTH_HEADER": "<AUTH_HEADER>"
+        "AUTH_HEADER": "<AUTH_HEADER>",
+        "NETWORK": "<TARGET_NETWORK>",
     },
     "rust-analyzer.runnables.extraArgs": [
         "--",

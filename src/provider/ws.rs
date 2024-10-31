@@ -1,10 +1,8 @@
 use std::time::Duration;
 
+use crate::common::{get_base_url_from_env, ws_endpoint, MAINNET_NY};
 use crate::connections::ws::WS;
-use crate::provider::{
-    constants::LOCAL_HTTP,
-    error::{ClientError, Result},
-};
+use crate::provider::error::{ClientError, Result};
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
 use tokio::time::timeout;
@@ -35,8 +33,10 @@ impl WebSocketConfig {
             ClientError::from(String::from("AUTH_HEADER environment variable not set"))
         })?;
 
+        let (base, secure) = get_base_url_from_env();
+
         Ok(Self {
-            endpoint: LOCAL_HTTP.to_string(),
+            endpoint: ws_endpoint(&base, secure),
             private_key,
             auth_header,
             use_tls: true,
@@ -46,9 +46,11 @@ impl WebSocketConfig {
 }
 
 impl WebSocketClient {
-    pub async fn new(endpoint: String) -> Result<Self> {
+    pub async fn new(endpoint: Option<String>) -> Result<Self> {
         let mut config = WebSocketConfig::try_from_env()?;
-        config.endpoint = endpoint;
+        if let Some(endpoint) = endpoint {
+            config.endpoint = endpoint;
+        }
         config.use_tls = true;
         Self::with_config(config).await
     }

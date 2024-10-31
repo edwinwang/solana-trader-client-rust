@@ -10,10 +10,8 @@ use tonic::{
     metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel, Request,
 };
 
-use crate::provider::{
-    constants::LOCAL_HTTP,
-    error::{ClientError, Result},
-};
+use crate::common::{get_base_url_from_env, grpc_endpoint};
+use crate::provider::error::{ClientError, Result};
 
 #[derive(Clone)]
 struct AuthInterceptor {
@@ -75,8 +73,10 @@ impl GrpcClientConfig {
             ClientError::from(String::from("AUTH_HEADER environment variable not set"))
         })?;
 
+        let (base, secure) = get_base_url_from_env();
+
         Ok(Self {
-            endpoint: LOCAL_HTTP.to_string(),
+            endpoint: grpc_endpoint(&base, secure),
             private_key,
             auth_header,
             use_tls: true,
@@ -92,9 +92,12 @@ impl Default for GrpcClientConfig {
 }
 
 impl GrpcClient {
-    pub async fn new(endpoint: String) -> Result<Self> {
+    pub async fn new(endpoint: Option<String>) -> Result<Self> {
         let mut config = GrpcClientConfig::try_from_env()?;
-        config.endpoint = endpoint;
+        if let Some(endpoint) = endpoint {
+            config.endpoint = endpoint;
+        }
+        println!("{:?}", config.endpoint);
         config.use_tls = true;
         Self::with_config(config).await
     }
