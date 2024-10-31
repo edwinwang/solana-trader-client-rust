@@ -31,7 +31,10 @@ async fn test_raydium_quotes_grpc(
     };
 
     let response = client.get_raydium_quotes(&request).await?;
-    println!("Raydium Quote: {:?}", response);
+    println!(
+        "Raydium Quote: {}",
+        serde_json::to_string_pretty(&response)?
+    );
     assert!(
         response.routes.len() > 0,
         "Expected at least one route in response"
