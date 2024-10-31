@@ -1,8 +1,7 @@
+use anyhow::Result;
 use rustls::crypto::ring::default_provider;
-use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
 use std::collections::HashMap;
-use std::time::Duration;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
 use tonic::Streaming;
@@ -10,8 +9,7 @@ use tonic::{
     metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel, Request,
 };
 
-use crate::common::{get_base_url_from_env, grpc_endpoint};
-use crate::provider::error::{ClientError, Result};
+use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig, DEFAULT_TIMEOUT};
 
 #[derive(Clone)]
 struct AuthInterceptor {
@@ -48,42 +46,6 @@ impl Interceptor for AuthInterceptor {
     }
 }
 
-impl Default for GrpcClientConfig {
-    fn default() -> Self {
-        Self::try_from_env().expect("Failed to load config from environment")
-    }
-}
-
-pub struct GrpcClientConfig {
-    pub endpoint: String,
-    pub private_key: Option<Keypair>,
-    pub auth_header: String,
-    pub use_tls: bool,
-    pub disable_auth: bool,
-}
-
-impl GrpcClientConfig {
-    pub fn try_from_env() -> Result<Self> {
-        let private_key = std::env::var("PRIVATE_KEY")
-            .ok()
-            .map(|pk| Keypair::from_base58_string(&pk));
-
-        let auth_header = std::env::var("AUTH_HEADER").map_err(|_| {
-            ClientError::from(String::from("AUTH_HEADER environment variable not set"))
-        })?;
-
-        let (base, secure) = get_base_url_from_env();
-
-        Ok(Self {
-            endpoint: grpc_endpoint(&base, secure),
-            private_key,
-            auth_header,
-            use_tls: true,
-            disable_auth: false,
-        })
-    }
-}
-
 #[derive(Debug)]
 pub struct GrpcClient {
     client: api::api_client::ApiClient<InterceptedService<Channel, AuthInterceptor>>,
@@ -91,34 +53,24 @@ pub struct GrpcClient {
 
 impl GrpcClient {
     pub async fn new(endpoint: Option<String>) -> Result<Self> {
-        let mut config = GrpcClientConfig::try_from_env()?;
-        if let Some(endpoint) = endpoint {
-            config.endpoint = endpoint;
-        }
-        println!("{:?}", config.endpoint);
-        config.use_tls = true;
-        Self::with_config(config).await
-    }
+        let base = BaseConfig::try_from_env()?;
+        let (base_url, secure) = get_base_url_from_env();
+        let endpoint = endpoint.unwrap_or_else(|| grpc_endpoint(&base_url, secure));
 
-    pub async fn with_config(config: GrpcClientConfig) -> Result<Self> {
-        default_provider().install_default().map_err(|e| {
-            ClientError::new(
-                "Failed to install crypto provider:",
-                anyhow::anyhow!("{:?}", e),
-            )
-        })?;
+        default_provider()
+            .install_default()
+            .map_err(|e| anyhow::anyhow!("Failed to install crypto provider: {:?}", e))?;
 
-        let channel = Channel::from_shared(config.endpoint.clone())
-            .map_err(|e| ClientError::new("Error: invalid uri:", e))?
-            .timeout(Duration::from_secs(30))
+        let channel = Channel::from_shared(endpoint.clone())
+            .map_err(|e| anyhow::anyhow!("Invalid URI: {}", e))?
+            .timeout(DEFAULT_TIMEOUT)
             .tls_config(ClientTlsConfig::new().with_webpki_roots())
-            .map_err(|e| ClientError::new("Error: tls config:", e))?
+            .map_err(|e| anyhow::anyhow!("TLS config error: {}", e))?
             .connect()
             .await
-            .map_err(|e| ClientError::new("Error: connect:", e))?;
+            .map_err(|e| anyhow::anyhow!("Connection error: {}", e))?;
 
-        let interceptor = AuthInterceptor::new(config.auth_header.clone(), !config.disable_auth);
-
+        let interceptor = AuthInterceptor::new(base.auth_header, true);
         let client = api::api_client::ApiClient::with_interceptor(channel, interceptor);
 
         Ok(Self { client })
@@ -130,9 +82,9 @@ impl GrpcClient {
     ) -> Result<api::GetRaydiumQuotesResponse> {
         let response = self
             .client
-            .get_raydium_quotes(tonic::Request::new(request.clone()))
+            .get_raydium_quotes(Request::new(request.clone()))
             .await
-            .map_err(|e| ClientError::new("GetRaydiumQuotes error:", e))?;
+            .map_err(|e| anyhow::anyhow!("GetRaydiumQuotes error: {}", e))?;
 
         Ok(response.into_inner())
     }
@@ -151,7 +103,7 @@ impl GrpcClient {
             .client
             .get_prices_stream(request)
             .await
-            .map_err(|e| ClientError::new("GetPricesStream error:", e))?;
+            .map_err(|e| anyhow::anyhow!("GetPricesStream error: {}", e))?;
 
         Ok(response.into_inner())
     }

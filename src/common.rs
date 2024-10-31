@@ -1,5 +1,8 @@
 use std::time::Duration;
 
+use anyhow::anyhow;
+use solana_sdk::signature::Keypair;
+
 pub const LOCAL: &str = "localhost:9000";
 pub const TESTNET: &str = "solana.dex.bxrtest.com";
 pub const MAINNET_NY: &str = "ny.solana.dex.blxrbdn.com";
@@ -38,5 +41,22 @@ pub fn get_base_url_from_env() -> (String, bool) {
         ("mainnet", "UK") => (MAINNET_UK.to_string(), true),
         ("mainnet", "PUMP") => (MAINNET_PUMP_NY.to_string(), true),
         _ => (MAINNET_NY.to_string(), true), // Default to NY mainnet
+    }
+}
+
+pub struct BaseConfig {
+    pub private_key: Option<Keypair>,
+    pub auth_header: String,
+}
+
+impl BaseConfig {
+    pub fn try_from_env() -> anyhow::Result<Self> {
+        Ok(Self {
+            private_key: std::env::var("PRIVATE_KEY")
+                .ok()
+                .map(|pk| Keypair::from_base58_string(&pk)),
+            auth_header: std::env::var("AUTH_HEADER")
+                .map_err(|_| anyhow!("AUTH_HEADER environment variable not set"))?,
+        })
     }
 }

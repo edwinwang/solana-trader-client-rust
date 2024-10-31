@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Client,
@@ -6,34 +7,13 @@ use serde::de::DeserializeOwned;
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
 
-use crate::common::{get_base_url_from_env, http_endpoint, DEFAULT_TIMEOUT};
-use crate::provider::error::{ClientError, Result};
+use crate::common::{get_base_url_from_env, http_endpoint, BaseConfig, DEFAULT_TIMEOUT};
 
 #[derive(Debug)]
 pub struct HTTPClientConfig {
     pub endpoint: String,
     pub private_key: Option<Keypair>,
     pub auth_header: String,
-}
-
-impl HTTPClientConfig {
-    pub fn try_from_env() -> Result<Self> {
-        let private_key = std::env::var("PRIVATE_KEY")
-            .ok()
-            .map(|pk| Keypair::from_base58_string(&pk));
-
-        let auth_header = std::env::var("AUTH_HEADER").map_err(|_| {
-            ClientError::from(String::from("AUTH_HEADER environment variable not set"))
-        })?;
-
-        let (base, secure) = get_base_url_from_env();
-
-        Ok(Self {
-            endpoint: http_endpoint(&base, secure),
-            private_key,
-            auth_header,
-        })
-    }
 }
 
 pub struct HTTPClient {
@@ -43,54 +23,51 @@ pub struct HTTPClient {
 
 impl HTTPClient {
     pub fn new(endpoint: Option<String>) -> Result<Self> {
-        let mut config = HTTPClientConfig::try_from_env()?;
-        if let Some(endpoint) = endpoint {
-            config.endpoint = endpoint;
-        }
-        Self::with_config(config)
+        let base = BaseConfig::try_from_env()?;
+        let (base_url, secure) = get_base_url_from_env();
+        let endpoint = endpoint.unwrap_or_else(|| http_endpoint(&base_url, secure));
+
+        let headers = Self::build_headers(&base.auth_header)?;
+        let client = Client::builder()
+            .default_headers(headers)
+            .timeout(DEFAULT_TIMEOUT)
+            .build()
+            .map_err(|e| anyhow!("Failed to create HTTP client: {}", e))?;
+
+        Ok(Self {
+            client,
+            base_url: endpoint,
+        })
     }
 
-    pub fn with_config(config: HTTPClientConfig) -> Result<Self> {
+    fn build_headers(auth_header: &str) -> Result<HeaderMap> {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
-            HeaderValue::from_str(&config.auth_header)
-                .map_err(|e| ClientError::new("Invalid auth header", e))?,
+            HeaderValue::from_str(auth_header)
+                .map_err(|e| anyhow!("Invalid auth header: {}", e))?,
         );
         headers.insert("x-sdk", HeaderValue::from_static("rust-client"));
         headers.insert(
             "x-sdk-version",
             HeaderValue::from_static(env!("CARGO_PKG_VERSION")),
         );
-
-        let client = Client::builder()
-            .default_headers(headers)
-            .timeout(DEFAULT_TIMEOUT)
-            .build()
-            .map_err(|e| ClientError::new("Failed to create HTTP client", e))?;
-
-        Ok(Self {
-            client,
-            base_url: config.endpoint,
-        })
+        Ok(headers)
     }
 
-    async fn handle_response<T>(&self, response: reqwest::Response) -> Result<T>
-    where
-        T: DeserializeOwned,
-    {
+    async fn handle_response<T: DeserializeOwned>(&self, response: reqwest::Response) -> Result<T> {
         if !response.status().is_success() {
             let error_text = response
                 .text()
                 .await
-                .unwrap_or_else(|_| String::from("Failed to read error response"));
-            return Err(ClientError::new("HTTP request failed", error_text));
+                .unwrap_or_else(|_| "Failed to read error response".into());
+            return Err(anyhow::anyhow!("HTTP request failed: {}", error_text));
         }
 
         response
-            .json::<T>()
+            .json()
             .await
-            .map_err(|e| ClientError::new("Failed to parse response", e))
+            .map_err(|e| anyhow::anyhow!("Failed to parse response: {}", e))
     }
 
     pub async fn get_raydium_quotes(
@@ -107,7 +84,7 @@ impl HTTPClient {
             .get(&url)
             .send()
             .await
-            .map_err(|e| ClientError::new("HTTP GET request failed", e))?;
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
 
         self.handle_response(response).await
     }

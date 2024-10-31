@@ -1,10 +1,11 @@
-use crate::common::{get_base_url_from_env, ws_endpoint, DEFAULT_TIMEOUT};
-use crate::connections::ws::WS;
-use crate::provider::error::{ClientError, Result};
+use anyhow::Result;
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api;
 use tokio::time::timeout;
 use tokio_stream::Stream;
+
+use crate::common::{get_base_url_from_env, ws_endpoint, BaseConfig, DEFAULT_TIMEOUT};
+use crate::connections::ws::WS;
 
 pub struct WebSocketConfig {
     pub endpoint: String,
@@ -14,77 +15,37 @@ pub struct WebSocketConfig {
     pub disable_auth: bool,
 }
 
-impl WebSocketConfig {
-    pub fn try_from_env() -> Result<Self> {
-        let private_key = std::env::var("PRIVATE_KEY")
-            .ok()
-            .map(|pk| Keypair::from_base58_string(&pk));
-
-        let auth_header = std::env::var("AUTH_HEADER").map_err(|_| {
-            ClientError::from(String::from("AUTH_HEADER environment variable not set"))
-        })?;
-
-        let (base, secure) = get_base_url_from_env();
-
-        Ok(Self {
-            endpoint: ws_endpoint(&base, secure),
-            private_key,
-            auth_header,
-            use_tls: true,
-            disable_auth: false,
-        })
-    }
-}
-
 pub struct WebSocketClient {
     conn: WS,
 }
 
 impl WebSocketClient {
     pub async fn new(endpoint: Option<String>) -> Result<Self> {
-        let mut config = WebSocketConfig::try_from_env()?;
-        if let Some(endpoint) = endpoint {
-            config.endpoint = endpoint;
-        }
-        config.use_tls = true;
-        Self::with_config(config).await
-    }
+        let base = BaseConfig::try_from_env()?;
+        let (base_url, secure) = get_base_url_from_env();
+        let endpoint = endpoint.unwrap_or_else(|| ws_endpoint(&base_url, secure));
 
-    pub async fn with_config(config: WebSocketConfig) -> Result<Self> {
-        Self::attempt_connection(config)
+        if base.auth_header.is_empty() {
+            return Err(anyhow::anyhow!("AUTH_HEADER is empty"));
+        }
+
+        let conn = timeout(DEFAULT_TIMEOUT, WS::new(Some(endpoint)))
             .await
-            .map_err(|_| ClientError::new("Connection failed", "Max retries exceeded"))
+            .map_err(|e| anyhow::anyhow!("Connection timeout: {}", e))??;
+
+        Ok(Self { conn })
     }
 
     pub async fn close(self) -> Result<()> {
         self.conn.close().await
     }
 
-    async fn attempt_connection(config: WebSocketConfig) -> Result<Self> {
-        if config.auth_header.is_empty() {
-            return Err(ClientError::new(
-                "Configuration error",
-                "AUTH_HEADER is empty",
-            ));
-        }
-
-        let conn = timeout(
-            DEFAULT_TIMEOUT,
-            WS::new(config.endpoint.clone(), config.auth_header.clone()),
-        )
-        .await
-        .map_err(|e| ClientError::new("Connection timeout", e))??;
-
-        Ok(Self { conn })
-    }
-
     pub async fn get_raydium_quotes(
         &self,
         request: &api::GetRaydiumQuotesRequest,
     ) -> Result<api::GetRaydiumQuotesResponse> {
-        // Convert proto message to JSON value
         let params = serde_json::to_value(request)
-            .map_err(|e| ClientError::new("Failed to serialize request:", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
 
         self.conn.request("GetRaydiumQuotes", params).await
     }

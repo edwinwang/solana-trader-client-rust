@@ -42,6 +42,12 @@ So each test must be called individually:
 cargo test test_raydium_quotes_grpc -- --ignored 
 ```
 
+If you want to see output from a given test, add the `nocapture` flag:
+
+```bash
+cargo test test_raydium_quotes_grpc -- --ignored --nocapture
+```
+
 
 ## Adding new test cases
 Using the `test_case` crate tests are parametrized:
@@ -65,7 +71,8 @@ Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and 
     },
     "rust-analyzer.runnables.extraArgs": [
         "--",
-        "--ignored"
+        "--ignored",
+        "--nocapture"
     ],
 }
 ```
