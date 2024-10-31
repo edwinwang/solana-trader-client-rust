@@ -6,9 +6,7 @@ With the `solana-trader-proto` in the right path:
 
 Change this above line to the path where your proto repo is, for now. **this will be updated to the published crate eventually**
 
-# Running tests
-
-## Environment setup
+# Environment setup
 set the necessary environment variables:
 
 ```bash
@@ -28,6 +26,8 @@ export REGION=<TARGET_REGION>
 - PUMP
 
 **If no region is defined, the SDK will use NY MAINNET**
+
+# Running tests
 
 Since these tests are networked, they have the ignore flag on by default:
 
