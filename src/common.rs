@@ -34,13 +34,14 @@ pub fn grpc_endpoint(base_url: &str, secure: bool) -> String {
 pub fn get_base_url_from_env() -> (String, bool) {
     let network = std::env::var("NETWORK").unwrap_or_else(|_| "mainnet".to_string());
     let region = std::env::var("REGION").unwrap_or_else(|_| "NY".to_string());
-
+    println!("network {}", network);
+    println!("region {}", region);
     match (network.as_str(), region.as_str()) {
         ("LOCAL", _) => (LOCAL.to_string(), false),
         ("TESTNET", _) => (TESTNET.to_string(), true),
         ("MAINNET", "UK") => (MAINNET_UK.to_string(), true),
         ("MAINNET", "PUMP") => (MAINNET_PUMP_NY.to_string(), true),
-        _ => (MAINNET_NY.to_string(), true), // Default to NY mainnet
+        _ =>  (LOCAL.to_string(), false), // Default to local to make it fail
     }
 }
 
