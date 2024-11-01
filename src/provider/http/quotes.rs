@@ -116,9 +116,7 @@ impl HTTPClient {
         projects: &[api::Project],
     ) -> Result<api::GetQuotesResponse> {
         // Convert projects to multiple project=X parameters
-        let project_params = projects
-            .iter()
-            .map(|p| format!("&project={}", *p as i32));
+        let project_params = projects.iter().map(|p| format!("&project={}", *p as i32));
 
         let url = format!(
             "{}/api/v1/market/quote?inToken={}&outToken={}&inAmount={}&slippage={}&limit={}{:?}",

@@ -27,8 +27,8 @@ pub fn ws_endpoint(base_url: &str, secure: bool) -> String {
 
 pub fn grpc_endpoint(base_url: &str, secure: bool) -> String {
     let prefix = if secure { "https" } else { "http" };
-    let port = if secure { "443" } else { "80" };
-    format!("{}://{}:{}", prefix, base_url, port)
+    let port = if secure { ":443" } else { "" };
+    format!("{}://{}{}", prefix, base_url, port)
 }
 
 pub fn get_base_url_from_env() -> (String, bool) {
