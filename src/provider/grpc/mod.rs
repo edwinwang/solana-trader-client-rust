@@ -28,7 +28,7 @@ use solana_sdk::instruction::Instruction;
 use solana_sdk::pubkey;
 use solana_sdk::signature::Keypair;
 use solana_sdk::transaction::Transaction;
-use solana_trader_proto::api::{PostSubmitRequest, PostSubmitResponse, TransactionMessage};
+use solana_trader_proto::api::{PostSubmitRequest, GetRecentBlockHashRequestV2, PostSubmitResponse, TransactionMessage};
 // use crate::provider::{
 //     constants::LOCAL_HTTP,
 //     error::{ClientError, Result},
@@ -117,10 +117,12 @@ impl GrpcClient {
         //base64 encoding
         let rawbytes = general_purpose::STANDARD
             .decode(tx.content).unwrap();
-        // Message::try_from(bytes);
+
         let mut transaction : Transaction =
             deserialize(&rawbytes).unwrap();
-        let block_hash = Hash::default();
+        let block_hash = self.client.get_recent_block_hash_v2(
+            GetRecentBlockHashRequestV2{ offset: 0 }
+        ).await.unwrap().into_inner().block_hash;
 
         // let memo_instruction = Instruction{
         //     program_id: pb,
@@ -131,7 +133,7 @@ impl GrpcClient {
         //     transaction.message.compile_instruction(&memo_instruction);
         // transaction.message.instructions.push(com_memo_instruction);
 
-        transaction.try_partial_sign(&[payer], block_hash).unwrap();
+        transaction.try_partial_sign(&[payer], block_hash.parse().unwrap()).unwrap();
 
 
         // bincode encode

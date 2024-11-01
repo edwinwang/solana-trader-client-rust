@@ -16,7 +16,7 @@ use solana_trader_proto::api::TransactionMessage;
     WRAPPED_SOL,
     USDC,
     0.1,
-    0.2;
+    20.0;
     "BTC to USDC with higher slippage"
 )]
 #[tokio::test]
@@ -60,10 +60,10 @@ async fn test_raydium_swap_grpc(
         token_address: "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump".to_string(),
         token_amount: pump_quote_response.out_amount,
         sol_threshold: pump_quote_response.in_amount,
-        compute_limit: 30000,
+        compute_limit: 300000,
         compute_price: 2000,
         tip: Some(2000001),
-        is_buy: false,
+        is_buy: true,
     };
     let mut response = client.post_pumpfun_swap(&request).await?;
     println!(

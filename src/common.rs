@@ -8,6 +8,7 @@ pub const TESTNET: &str = "solana.dex.bxrtest.com";
 pub const MAINNET_NY: &str = "ny.solana.dex.blxrbdn.com";
 pub const MAINNET_UK: &str = "uk.solana.dex.blxrbdn.com";
 pub const MAINNET_PUMP_NY: &str = "pump-ny.solana.dex.blxrbdn.com";
+pub const MAINNET_PUMP_UK: &str = "pump-uk.solana.dex.blxrbdn.com";
 
 // Common tokens
 pub const WRAPPED_SOL: &str = "So11111111111111111111111111111111111111112";
@@ -40,7 +41,8 @@ pub fn get_base_url_from_env() -> (String, bool) {
         ("LOCAL", _) => (LOCAL.to_string(), false),
         ("TESTNET", _) => (TESTNET.to_string(), true),
         ("MAINNET", "UK") => (MAINNET_UK.to_string(), true),
-        ("MAINNET", "PUMP") => (MAINNET_PUMP_NY.to_string(), true),
+        ("MAINNET_PUMP", "NY") => (MAINNET_PUMP_NY.to_string(), true),
+        ("MAINNET_PUMP", "UK") => (MAINNET_PUMP_UK.to_string(), true),
         _ =>  (LOCAL.to_string(), false), // Default to local to make it fail
     }
 }
