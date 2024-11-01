@@ -70,6 +70,7 @@ impl HTTPClient {
             .map_err(|e| anyhow::anyhow!("Failed to parse response: {}", e))
     }
 
+    /// Quotes
     pub async fn get_raydium_quotes(
         &self,
         request: &api::GetRaydiumQuotesRequest,
@@ -88,4 +89,44 @@ impl HTTPClient {
 
         self.handle_response(response).await
     }
+
+    pub async fn get_raydium_cpmm_quotes(
+        &self,
+        request: &api::GetRaydiumCpmmQuotesRequest,
+    ) -> Result<api::GetRaydiumCpmmQuotesResponse> {
+        let url = format!(
+            "{}/api/v2/raydium/cpmm-quotes?inToken={}&outToken={}&inAmount={}&slippage={}",
+            self.base_url, request.in_token, request.out_token, request.in_amount, request.slippage
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn get_raydium_clmm_quotes(
+        &self,
+        request: &api::GetRaydiumClmmQuotesRequest,
+    ) -> Result<api::GetRaydiumClmmQuotesResponse> {
+        let url = format!(
+            "{}/api/v2/raydium/clmm-quotes?inToken={}&outToken={}&inAmount={}&slippage={}",
+            self.base_url, request.in_token, request.out_token, request.in_amount, request.slippage
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow::anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
+
 }

@@ -223,11 +223,22 @@ impl WS {
             .map_err(|_| anyhow::anyhow!("Response timeout"))?
             .ok_or_else(|| anyhow::anyhow!("Channel closed unexpectedly"))?;
 
-        let json_response: Value = serde_json::from_str(&response.response)
+        let mut json_response: Value = serde_json::from_str(&response.response)
             .map_err(|e| anyhow::anyhow!("Failed to parse response: {}", e))?;
 
         if let Some(error) = json_response.get("error") {
             return Err(anyhow::anyhow!("RPC error: {}", error));
+        }
+
+        // tradeFeeRate come in as a string, and so causes a parsing error without casting to the expected u64.
+        if let Some(obj) = json_response.get_mut("result") {
+            if let Some(fee_rate) = obj.get("tradeFeeRate") {
+                if let Some(fee_str) = fee_rate.as_str() {
+                    if let Ok(fee_num) = fee_str.parse::<u64>() {
+                        obj["tradeFeeRate"] = json!(fee_num);
+                    }
+                }
+            }
         }
 
         let result = json_response

@@ -40,6 +40,7 @@ impl WebSocketClient {
         self.conn.close().await
     }
 
+    // Quotes
     pub async fn get_raydium_quotes(
         &self,
         request: &api::GetRaydiumQuotesRequest,
@@ -48,6 +49,26 @@ impl WebSocketClient {
             .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
 
         self.conn.request("GetRaydiumQuotes", params).await
+    }
+
+    pub async fn get_raydium_cpmm_quotes(
+        &self,
+        request: &api::GetRaydiumCpmmQuotesRequest,
+    ) -> Result<api::GetRaydiumCpmmQuotesResponse> {
+        let params = serde_json::to_value(request)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
+
+        self.conn.request("GetRaydiumCPMMQuotes", params).await
+    }
+
+    pub async fn get_raydium_clmm_quotes(
+        &self,
+        request: &api::GetRaydiumClmmQuotesRequest,
+    ) -> Result<api::GetRaydiumClmmQuotesResponse> {
+        let params = serde_json::to_value(request)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
+
+        self.conn.request("GetRaydiumCLMMQuotes", params).await
     }
 
     pub async fn get_trades_stream(

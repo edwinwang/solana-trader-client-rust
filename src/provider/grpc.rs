@@ -76,6 +76,7 @@ impl GrpcClient {
         Ok(Self { client })
     }
 
+    /// QUOTES
     pub async fn get_raydium_quotes(
         &mut self,
         request: &api::GetRaydiumQuotesRequest,
@@ -85,6 +86,32 @@ impl GrpcClient {
             .get_raydium_quotes(Request::new(request.clone()))
             .await
             .map_err(|e| anyhow::anyhow!("GetRaydiumQuotes error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_raydium_cpmm_quotes(
+        &mut self,
+        request: &api::GetRaydiumCpmmQuotesRequest,
+    ) -> Result<api::GetRaydiumCpmmQuotesResponse> {
+        let response = self
+            .client
+            .get_raydium_cpmm_quotes(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("GetRaydiumCPMMQuotes error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_raydium_clmm_quotes(
+        &mut self,
+        request: &api::GetRaydiumClmmQuotesRequest,
+    ) -> Result<api::GetRaydiumClmmQuotesResponse> {
+        let response = self
+            .client
+            .get_raydium_clmm_quotes(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("GetRaydiumCLMMQuotes error: {}", e))?;
 
         Ok(response.into_inner())
     }
