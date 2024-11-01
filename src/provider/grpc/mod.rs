@@ -120,7 +120,7 @@ impl GrpcClient {
         // Message::try_from(bytes);
         let mut transaction : Transaction =
             deserialize(&rawbytes).unwrap();
-        // let block_hash = Hash::default();
+        let block_hash = Hash::default();
 
         // let memo_instruction = Instruction{
         //     program_id: pb,
@@ -131,26 +131,33 @@ impl GrpcClient {
         //     transaction.message.compile_instruction(&memo_instruction);
         // transaction.message.instructions.push(com_memo_instruction);
 
-        // transaction.try_partial_sign(&[payer], block_hash).unwrap();
+        transaction.try_partial_sign(&[payer], block_hash).unwrap();
 
 
         // bincode encode
-        let content = transaction.message.serialize();
+        // let content = transaction.message.serialize();
 
         // println!("content {}", String::from_utf8(content.clone()));
 
         // base 64 encoding
-        let encoded_base64: String = general_purpose::STANDARD
-            .encode(content.clone());
-      let encoded_rawbytes_base64: String = general_purpose::STANDARD
-            .encode(&rawbytes.clone());
+        // let encoded_base64: String = general_purpose::STANDARD
+        //     .encode(content.clone());
+      // let encoded_rawbytes_base64: String = general_purpose::STANDARD
+      //       .encode(&rawbytes.clone());
+
+        let bincode =
+            bincode::serialize(&transaction).expect("Serialization failed");
+
+        let encoded_rawbytes_base64: String = general_purpose::STANDARD
+            .encode(bincode.clone());
+
 
         const CUSTOM_ENGINE: engine::GeneralPurpose =
             engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
 
-        // let encodedBase58 = bitnet::base58::encode(content.as_slice()).to_string();
-        println!("encoded_base64 {}", encoded_base64.clone());
-        println!("encoded_rawbytes_base64 {}", encoded_rawbytes_base64.clone());
+        // let encodedBase58 = bitnet::base58::encode(encoded_rawbytes_base64.as_slice()).to_string();
+        // println!("encoded_base64 {}", encoded_base64.clone());
+        // println!("encoded_rawbytes_base64 {}", encoded_rawbytes_base64.clone());
         // println!("encodedBase58 {}", encodedBase58.clone());
         let req = PostSubmitRequest {
             transaction: Some(TransactionMessage{
