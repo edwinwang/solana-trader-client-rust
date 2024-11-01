@@ -67,13 +67,12 @@ impl HTTPClient {
         request: &api::GetPumpFunQuotesRequest,
     ) -> Result<api::GetPumpFunQuotesResponse> {
         let url = format!(
-            "{}/api/v2/pumpfun/quotes?mintAddress={}&quoteType={}&amount={}&bondingCurveAddress={}&slippage={}",
+            "{}/api/v2/pumpfun/quotes?mintAddress={}&quoteType={}&amount={}&bondingCurveAddress={}",
             self.base_url,
             request.mint_address,
             request.quote_type,
             request.amount,
             request.bonding_curve_address,
-            request.slippage
         );
 
         let response = self

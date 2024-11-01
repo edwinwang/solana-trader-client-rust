@@ -48,7 +48,6 @@ async fn test_raydium_swap_grpc(
         bonding_curve_address: "Fh8fnZUVEpPStJ2hKFNNjMAyuyvoJLMouENawg4DYCBc".to_string(),
         amount: 0.0001,
         mint_address: "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump".to_string(),
-        slippage,
     };
 
     let mut pump_quote_response = client.get_pump_fun_quotes(&request).await?;
@@ -62,6 +61,7 @@ async fn test_raydium_swap_grpc(
         sol_threshold: pump_quote_response.in_amount,
         compute_limit: 300000,
         compute_price: 2000,
+        slippage: 10.0,
         tip: Some(2000001),
         is_buy: true,
     };
