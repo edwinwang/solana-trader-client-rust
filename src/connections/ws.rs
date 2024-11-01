@@ -21,6 +21,7 @@ use tokio_tungstenite::{tungstenite::protocol::Message, WebSocketStream};
 use url::Url;
 
 use crate::common::{get_base_url_from_env, ws_endpoint, BaseConfig};
+use crate::provider::utils::convert_string_enums;
 
 const CONNECTION_RETRY_TIMEOUT: Duration = Duration::from_secs(15);
 const CONNECTION_RETRY_INTERVAL: Duration = Duration::from_millis(100);
@@ -245,8 +246,10 @@ impl WS {
             .get("result")
             .ok_or_else(|| anyhow::anyhow!("Missing result field in response"))?;
 
-        serde_json::from_value(result.clone())
-            .map_err(|e| anyhow::anyhow!("Failed to parse result: {}", e))
+        let mut res = result.clone();
+        convert_string_enums(&mut res);
+
+        serde_json::from_value(res).map_err(|e| anyhow::anyhow!("Failed to parse result: {}", e))
     }
 
     pub async fn stream_proto<Req, Resp>(
@@ -280,42 +283,12 @@ impl WS {
         Ok(
             tokio_stream::wrappers::ReceiverStream::new(rx).map(|value: Value| {
                 let mut modified_value = value;
-                Self::convert_slot_to_i64(&mut modified_value);
-                Self::convert_project_to_i32(&mut modified_value);
+                convert_string_enums(&mut modified_value);
 
                 serde_json::from_value(modified_value)
                     .map_err(|e| anyhow::anyhow!("Failed to parse stream value: {}", e))
             }),
         )
-    }
-
-    fn convert_slot_to_i64(value: &mut Value) {
-        if let Some(slot) = value.get("slot") {
-            if let Some(slot_str) = slot.as_str() {
-                if let Ok(slot_num) = slot_str.parse::<i64>() {
-                    value["slot"] = json!(slot_num);
-                }
-            }
-        }
-    }
-
-    fn convert_project_to_i32(value: &mut Value) {
-        if let Some(price) = value.get_mut("price") {
-            if let Some(project) = price.get_mut("project") {
-                if let Some(project_str) = project.as_str() {
-                    let project_num = match project_str {
-                        "P_UNKNOWN" => 0,
-                        "P_ALL" => 1,
-                        "P_JUPITER" => 2,
-                        "P_RAYDIUM" => 3,
-                        "P_SERUM" => 4,
-                        "P_OPENBOOK" => 5,
-                        _ => 0,
-                    };
-                    *project = json!(project_num);
-                }
-            }
-        }
     }
 
     pub async fn close(self) -> Result<()> {

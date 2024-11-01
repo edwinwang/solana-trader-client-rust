@@ -1,12 +1,14 @@
+pub mod quotes;
+pub mod streams;
+
 use anyhow::Result;
 use rustls::crypto::ring::default_provider;
 use solana_trader_proto::api;
 use std::collections::HashMap;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
-use tonic::Streaming;
 use tonic::{
-    metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel, Request,
+    metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel,
 };
 
 use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig, DEFAULT_TIMEOUT};
@@ -74,64 +76,5 @@ impl GrpcClient {
         let client = api::api_client::ApiClient::with_interceptor(channel, interceptor);
 
         Ok(Self { client })
-    }
-
-    /// QUOTES
-    pub async fn get_raydium_quotes(
-        &mut self,
-        request: &api::GetRaydiumQuotesRequest,
-    ) -> Result<api::GetRaydiumQuotesResponse> {
-        let response = self
-            .client
-            .get_raydium_quotes(Request::new(request.clone()))
-            .await
-            .map_err(|e| anyhow::anyhow!("GetRaydiumQuotes error: {}", e))?;
-
-        Ok(response.into_inner())
-    }
-
-    pub async fn get_raydium_cpmm_quotes(
-        &mut self,
-        request: &api::GetRaydiumCpmmQuotesRequest,
-    ) -> Result<api::GetRaydiumCpmmQuotesResponse> {
-        let response = self
-            .client
-            .get_raydium_cpmm_quotes(Request::new(request.clone()))
-            .await
-            .map_err(|e| anyhow::anyhow!("GetRaydiumCPMMQuotes error: {}", e))?;
-
-        Ok(response.into_inner())
-    }
-
-    pub async fn get_raydium_clmm_quotes(
-        &mut self,
-        request: &api::GetRaydiumClmmQuotesRequest,
-    ) -> Result<api::GetRaydiumClmmQuotesResponse> {
-        let response = self
-            .client
-            .get_raydium_clmm_quotes(Request::new(request.clone()))
-            .await
-            .map_err(|e| anyhow::anyhow!("GetRaydiumCLMMQuotes error: {}", e))?;
-
-        Ok(response.into_inner())
-    }
-
-    pub async fn get_prices_stream(
-        &mut self,
-        projects: Vec<api::Project>,
-        tokens: Vec<String>,
-    ) -> Result<Streaming<api::GetPricesStreamResponse>> {
-        let request = Request::new(api::GetPricesStreamRequest {
-            projects: projects.iter().map(|&p| p as i32).collect(),
-            tokens,
-        });
-
-        let response = self
-            .client
-            .get_prices_stream(request)
-            .await
-            .map_err(|e| anyhow::anyhow!("GetPricesStream error: {}", e))?;
-
-        Ok(response.into_inner())
     }
 }

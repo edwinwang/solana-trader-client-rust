@@ -6,7 +6,6 @@ use test_case::test_case;
 use tokio::time::timeout;
 use tokio_stream::StreamExt;
 
-// TODO: very verbose, refactor if possible.
 #[test_case(
     vec![api::Project::PRaydium],
     vec![WRAPPED_SOL.to_string()] ;

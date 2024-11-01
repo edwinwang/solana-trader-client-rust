@@ -36,10 +36,10 @@ pub fn get_base_url_from_env() -> (String, bool) {
     let region = std::env::var("REGION").unwrap_or_else(|_| "NY".to_string());
 
     match (network.as_str(), region.as_str()) {
-        ("local", _) => (LOCAL.to_string(), false),
-        ("testnet", _) => (TESTNET.to_string(), true),
-        ("mainnet", "UK") => (MAINNET_UK.to_string(), true),
-        ("mainnet", "PUMP") => (MAINNET_PUMP_NY.to_string(), true),
+        ("LOCAL", _) => (LOCAL.to_string(), false),
+        ("TESTNET", _) => (TESTNET.to_string(), true),
+        ("MAINNET", "UK") => (MAINNET_UK.to_string(), true),
+        ("MAINNET", "PUMP") => (MAINNET_PUMP_NY.to_string(), true),
         _ => (MAINNET_NY.to_string(), true), // Default to NY mainnet
     }
 }
