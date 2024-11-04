@@ -23,13 +23,13 @@ async fn test_raydium_swap_grpc(
     in_amount: f64,
     slippage: f64,
 ) -> Result<()> {
-    dotenv().ok();
-
-    let owner_address = env::var("PUBLIC_KEY").expect("PUBLIC_KEY not found in .env file");
     let mut client = GrpcClient::new(None).await?;
 
     let request = api::PostRaydiumSwapRequest {
-        owner_address,
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for pump fun swap"))
+            .to_string(),
         in_token: in_token.to_string(),
         out_token: out_token.to_string(),
         in_amount,
@@ -90,7 +90,6 @@ async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
     let request = api::PostPumpFunSwapRequest {
         user_address: client
             .public_key
-            .clone()
             .unwrap_or_else(|| panic!("Public key is required for pump fun swap"))
             .to_string(),
         bonding_curve_address: bonding_curve_address.to_string(),
