@@ -1,21 +1,21 @@
-use std::env;
 use anyhow::Result;
+use dotenv::dotenv;
 use env_logger::Env;
+use solana_sdk::bs58::decode;
+use solana_sdk::signature::{Keypair, SignerError};
 use solana_trader_client_rust::{
     common::{USDC, WRAPPED_SOL},
     provider::grpc::GrpcClient,
 };
 use solana_trader_proto::api;
-use test_case::test_case;
-use dotenv::dotenv;
-use solana_sdk::bs58::decode;
-use solana_sdk::signature::{Keypair, SignerError};
 use solana_trader_proto::api::TransactionMessage;
+use std::env;
+use test_case::test_case;
 
 #[test_case(
     WRAPPED_SOL,
     USDC,
-    0.0001,
+    0.001,
     20.0;
     "BTC to USDC with higher slippage"
 )]
@@ -38,7 +38,7 @@ async fn test_raydium_swap_grpc(
         out_token: out_token.to_string(),
         in_amount,
         slippage,
-        compute_limit: 30000,
+        compute_limit: 300000,
         compute_price: 2000,
         tip: Some(2000001),
     };
@@ -52,21 +52,22 @@ async fn test_raydium_swap_grpc(
     let mut output = [0; 64];
     let _ = decode(pv_key).onto(&mut output).unwrap();
 
-    // Create the keypair from the decoded private key bytes
     let keypair = Keypair::from_bytes(&output)?;
     let txs = response.transactions.as_slice();
-    for tx in txs{
-        let s = client.sign_and_submit(
-            TransactionMessage{
-                content: tx.clone().content,
-                is_cleanup: tx.is_cleanup,
-            },
-            &keypair,
-            true,
-            false,
-            false,
-            false,
-        ).await;
+    for tx in txs {
+        let s = client
+            .sign_and_submit(
+                TransactionMessage {
+                    content: tx.clone().content,
+                    is_cleanup: tx.is_cleanup,
+                },
+                &keypair,
+                true,
+                false,
+                false,
+                false,
+            )
+            .await;
         println!("rayidum signature : {}", s);
     }
 
@@ -79,15 +80,13 @@ async fn test_raydium_swap_grpc(
     "Pumpfun swap"
 )]
 #[tokio::test]
-async fn test_pumpfun_swap_grpc(
-    in_amount: f64,
-    slippage: f64,
-) -> Result<()> {
+async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
     dotenv().ok();
     let bonding_curve_address = "Fh8fnZUVEpPStJ2hKFNNjMAyuyvoJLMouENawg4DYCBc";
     let mint_address = "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump";
     let owner_address = env::var("PUBLIC_KEY").expect("PUBLIC_KEY not found in .env file");
     let pv_key = env::var("PRIVATE_KEY").expect("PRIVATE_KEY not found in .env file");
+    env::set_var("NETWORK", "MAINNET_PUMP");
     let mut client = GrpcClient::new(None).await?;
 
     let request = api::GetPumpFunQuotesRequest {
@@ -98,7 +97,6 @@ async fn test_pumpfun_swap_grpc(
     };
 
     let pump_quote_response = client.get_pump_fun_quotes(&request).await?;
-
 
     let request = api::PostPumpFunSwapRequest {
         user_address: owner_address,
@@ -121,20 +119,21 @@ async fn test_pumpfun_swap_grpc(
     let mut output = [0; 64];
     let _ = decode(pv_key).onto(&mut output).unwrap();
 
-
     let keypair = Keypair::from_bytes(&output)?;
     let tx_content = response.transaction.unwrap().content;
-    let s = client.sign_and_submit(
-        TransactionMessage{
-            content: tx_content,
-            is_cleanup: false,
-        },
-        &keypair,
-        true,
-        false,
-        false,
-        false,
-    ).await;
+    let s = client
+        .sign_and_submit(
+            TransactionMessage {
+                content: tx_content,
+                is_cleanup: false,
+            },
+            &keypair,
+            true,
+            false,
+            false,
+            false,
+        )
+        .await;
     println!("signature : {}", s);
     Ok(())
 }
