@@ -43,7 +43,6 @@ impl WebSocketClient {
             "mintAddress": request.mint_address,
             "bondingCurveAddress": request.bonding_curve_address,
             "amount": request.amount,
-            "slippage": request.slippage
         });
 
         self.conn.request("GetPumpFunQuotes", params).await

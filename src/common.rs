@@ -8,6 +8,7 @@ pub const TESTNET: &str = "solana.dex.bxrtest.com";
 pub const MAINNET_NY: &str = "ny.solana.dex.blxrbdn.com";
 pub const MAINNET_UK: &str = "uk.solana.dex.blxrbdn.com";
 pub const MAINNET_PUMP_NY: &str = "pump-ny.solana.dex.blxrbdn.com";
+pub const MAINNET_PUMP_UK: &str = "pump-uk.solana.dex.blxrbdn.com";
 
 // Common tokens
 pub const WRAPPED_SOL: &str = "So11111111111111111111111111111111111111112";
@@ -34,13 +35,16 @@ pub fn grpc_endpoint(base_url: &str, secure: bool) -> String {
 pub fn get_base_url_from_env() -> (String, bool) {
     let network = std::env::var("NETWORK").unwrap_or_else(|_| "mainnet".to_string());
     let region = std::env::var("REGION").unwrap_or_else(|_| "NY".to_string());
-
+    println!("network {}", network);
+    println!("region {}", region);
     match (network.as_str(), region.as_str()) {
         ("LOCAL", _) => (LOCAL.to_string(), false),
         ("TESTNET", _) => (TESTNET.to_string(), true),
         ("MAINNET", "UK") => (MAINNET_UK.to_string(), true),
-        ("MAINNET", "PUMP") => (MAINNET_PUMP_NY.to_string(), true),
-        _ => (MAINNET_NY.to_string(), true), // Default to NY mainnet
+        ("MAINNET", "NY") => (MAINNET_NY.to_string(), true),
+        ("MAINNET_PUMP", "NY") => (MAINNET_PUMP_NY.to_string(), true),
+        ("MAINNET_PUMP", "UK") => (MAINNET_PUMP_UK.to_string(), true),
+        _ => (LOCAL.to_string(), false), // Default to local to make it fail
     }
 }
 

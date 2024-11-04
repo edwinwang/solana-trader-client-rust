@@ -1,4 +1,5 @@
 use anyhow::Result;
+use env_logger::Env;
 use solana_trader_client_rust::{
     common::{USDC, WRAPPED_SOL},
     provider::grpc::GrpcClient,
@@ -14,7 +15,6 @@ use test_case::test_case;
     "BTC to USDC with higher slippage"
 )]
 #[tokio::test]
-#[ignore]
 async fn test_raydium_quotes_grpc(
     in_token: &str,
     out_token: &str,
@@ -141,7 +141,6 @@ async fn test_pump_fun_quotes_grpc(
         bonding_curve_address: bonding_curve_address.to_string(),
         quote_type: quote_type.to_string(),
         amount,
-        slippage,
     };
 
     let response = client.get_pump_fun_quotes(&request).await?;
