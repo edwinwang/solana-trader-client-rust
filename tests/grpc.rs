@@ -18,7 +18,6 @@ mod tests {
         "BTC to USDC with higher slippage"
     )]
     #[tokio::test]
-    // #[ignore]
     async fn test_raydium_quotes_grpc(
         in_token: &str,
         out_token: &str,

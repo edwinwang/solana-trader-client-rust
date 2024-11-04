@@ -73,7 +73,6 @@ impl GrpcClient {
         let base = BaseConfig::try_from_env()?;
         let (base_url, secure) = get_base_url_from_env();
         let endpoint = endpoint.unwrap_or_else(|| grpc_endpoint(&base_url, secure));
-        println!("endpoint : {}", endpoint);
         default_provider()
             .install_default()
             .map_err(|e| anyhow::anyhow!("Failed to install crypto provider: {:?}", e))?;
