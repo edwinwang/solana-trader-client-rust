@@ -32,17 +32,6 @@ async fn test_raydium_swap_grpc(
     let pv_key = env::var("PRIVATE_KEY").expect("PRIVATE_KEY not found in .env file");
     let mut client = GrpcClient::new(None).await?;
 
-    let request = api::GetRaydiumQuotesRequest{
-        in_token: in_token.to_string(),
-        out_token: out_token.to_string(),
-        in_amount,
-        slippage,
-    };
-
-
-    let quote_response = client.get_raydium_quotes(&request).await?;
-
-
     let request = api::PostRaydiumSwapRequest {
         owner_address,
         in_token: in_token.to_string(),
