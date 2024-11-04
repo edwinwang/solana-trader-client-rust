@@ -143,8 +143,7 @@ async fn test_raydium_clmm_quotes_ws(
     "BAHY8ocERNc5j6LqkYav1Prr8GBGsHvBV5X3dWPhsgXw",  // Token address
     "7BcRpqUC7AF5Xsc3QEpCb8xmoi2X1LpwjUBNThbjWvyo",  // Bonding curve address
     "Sell",                                            // Quote type
-    10.0,                                             // Amount
-    0.1;                                              // Slippage
+    10.0;                                             // Amount
     "PumpFun Sell quote"
 )]
 #[tokio::test]
@@ -154,7 +153,6 @@ async fn test_pump_fun_quotes_ws(
     bonding_curve_address: &str,
     quote_type: &str,
     amount: f64,
-    slippage: f64,
 ) -> Result<()> {
     let client = WebSocketClient::new(None).await?;
 
@@ -163,7 +161,6 @@ async fn test_pump_fun_quotes_ws(
         bonding_curve_address: bonding_curve_address.to_string(),
         quote_type: quote_type.to_string(),
         amount,
-        slippage,
     };
 
     let response = timeout(

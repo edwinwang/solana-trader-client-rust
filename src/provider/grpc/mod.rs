@@ -2,9 +2,10 @@ pub mod quotes;
 pub mod streams;
 pub mod swaps;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use bincode::deserialize;
 use rustls::crypto::ring::default_provider;
+use solana_sdk::pubkey::Pubkey;
 use solana_trader_proto::api;
 use std::collections::HashMap;
 use tonic::service::Interceptor;
@@ -59,6 +60,8 @@ impl Interceptor for AuthInterceptor {
 #[derive(Debug)]
 pub struct GrpcClient {
     client: api::api_client::ApiClient<InterceptedService<Channel, AuthInterceptor>>,
+    keypair: Option<Keypair>,
+    pub public_key: Option<Pubkey>,
 }
 
 impl GrpcClient {
@@ -82,37 +85,61 @@ impl GrpcClient {
         let interceptor = AuthInterceptor::new(base.auth_header, true);
         let client = api::api_client::ApiClient::with_interceptor(channel, interceptor);
 
-        Ok(Self { client })
+        Ok(Self {
+            client,
+            public_key: base.public_key,
+            keypair: base.keypair,
+        })
     }
 
     pub async fn sign_and_submit(
         &mut self,
         tx: TransactionMessage,
-        payer: &Keypair,
         skip_pre_flight: bool,
         front_running_protection: bool,
         use_staked_rpcs: bool,
         fast_best_effort: bool,
-    ) -> String {
-        let rawbytes = general_purpose::STANDARD.decode(tx.content).unwrap();
+    ) -> Result<String> {
+        // Get keypair reference early to fail fast if not available
+        let keypair = self
+            .keypair
+            .as_ref()
+            .ok_or_else(|| anyhow!("No keypair available for signing"))?;
 
-        let mut transaction: Transaction = deserialize(&rawbytes).unwrap();
+        // Decode transaction content
+        let rawbytes = general_purpose::STANDARD
+            .decode(&tx.content)
+            .map_err(|e| anyhow!("Failed to decode transaction content: {}", e))?;
+
+        // Deserialize transaction
+        let mut transaction: Transaction = deserialize(&rawbytes)
+            .map_err(|e| anyhow!("Failed to deserialize transaction: {}", e))?;
+
+        // Get recent blockhash
         let block_hash = self
             .client
             .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
             .await
-            .unwrap()
+            .map_err(|e| anyhow!("Failed to get recent blockhash: {}", e))?
             .into_inner()
             .block_hash;
 
+        // Parse blockhash and sign transaction
+        let parsed_hash = block_hash
+            .parse()
+            .map_err(|e| anyhow!("Failed to parse blockhash: {}", e))?;
+
         transaction
-            .try_partial_sign(&[payer], block_hash.parse().unwrap())
-            .unwrap();
+            .try_partial_sign(&[keypair], parsed_hash)
+            .map_err(|e| anyhow!("Failed to sign transaction: {}", e))?;
 
-        let bincode = bincode::serialize(&transaction).expect("Serialization failed");
+        // Serialize signed transaction
+        let bincode = bincode::serialize(&transaction)
+            .map_err(|e| anyhow!("Failed to serialize signed transaction: {}", e))?;
 
-        let encoded_rawbytes_base64: String = general_purpose::STANDARD.encode(bincode.clone());
+        let encoded_rawbytes_base64 = general_purpose::STANDARD.encode(bincode);
 
+        // Prepare and submit request
         let req = PostSubmitRequest {
             transaction: Some(TransactionMessage {
                 content: encoded_rawbytes_base64,
@@ -124,10 +151,14 @@ impl GrpcClient {
             use_staked_rp_cs: Some(use_staked_rpcs),
             fast_best_effort: Some(fast_best_effort),
         };
-        let res = self.client.post_submit(req).await;
-        match res {
-            Ok(v) => v.into_inner().signature,
-            Err(v) => "failed to send".to_string() + "err: " + v.message(),
+
+        // Submit and handle response
+        match self.client.post_submit(req).await {
+            Ok(response) => Ok(response.into_inner().signature),
+            Err(status) => Err(anyhow!(
+                "Transaction submission failed: {}",
+                status.message()
+            )),
         }
     }
 }

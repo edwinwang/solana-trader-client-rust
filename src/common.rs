@@ -1,7 +1,9 @@
-use std::time::Duration;
-
-use anyhow::anyhow;
+use anyhow::{anyhow, Result};
+use dotenv::dotenv;
 use solana_sdk::signature::Keypair;
+use solana_sdk::{bs58::decode, pubkey::Pubkey};
+use std::str::FromStr;
+use std::{env, time::Duration};
 
 pub const LOCAL: &str = "localhost:9000";
 pub const TESTNET: &str = "solana.dex.bxrtest.com";
@@ -49,18 +51,54 @@ pub fn get_base_url_from_env() -> (String, bool) {
 }
 
 pub struct BaseConfig {
-    pub private_key: Option<Keypair>,
+    pub keypair: Option<Keypair>,
     pub auth_header: String,
+    pub public_key: Option<Pubkey>,
 }
 
 impl BaseConfig {
-    pub fn try_from_env() -> anyhow::Result<Self> {
-        Ok(Self {
-            private_key: std::env::var("PRIVATE_KEY")
+    pub fn try_from_env() -> Result<Self> {
+        // Load .env file if present
+        dotenv().ok();
+
+        // Get required auth header
+        let auth_header = env::var("AUTH_HEADER")
+            .map_err(|_| anyhow!("AUTH_HEADER environment variable not set"))?;
+
+        // Get optional public key
+        let public_key = env::var("PUBLIC_KEY").ok().and_then(|pk_str| {
+            Pubkey::from_str(&pk_str)
+                .map_err(|e| {
+                    println!("Warning: Failed to parse public key: {}", e);
+                    e
+                })
                 .ok()
-                .map(|pk| Keypair::from_base58_string(&pk)),
-            auth_header: std::env::var("AUTH_HEADER")
-                .map_err(|_| anyhow!("AUTH_HEADER environment variable not set"))?,
+        });
+
+        // Get optional private key and convert to keypair if present
+        let keypair = if let Ok(private_key) = env::var("PRIVATE_KEY") {
+            let mut output = [0; 64];
+            match decode(private_key).onto(&mut output) {
+                Ok(_) => match Keypair::from_bytes(&output) {
+                    Ok(kp) => Some(kp),
+                    Err(e) => {
+                        println!("Warning: Failed to create keypair: {}", e);
+                        None
+                    }
+                },
+                Err(e) => {
+                    println!("Warning: Failed to decode private key: {}", e);
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        Ok(Self {
+            keypair,
+            auth_header,
+            public_key,
         })
     }
 }

@@ -17,7 +17,7 @@ impl GrpcClient {
 
         Ok(response.into_inner())
     }
-    pub async fn post_pumpfun_swap(
+    pub async fn post_pump_swap(
         &mut self,
         request: &api::PostPumpFunSwapRequest,
     ) -> Result<api::PostPumpFunSwapResponse> {

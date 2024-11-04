@@ -125,8 +125,7 @@ async fn test_raydium_clmm_quotes_http(
     "BAHY8ocERNc5j6LqkYav1Prr8GBGsHvBV5X3dWPhsgXw",
     "7BcRpqUC7AF5Xsc3QEpCb8xmoi2X1LpwjUBNThbjWvyo",
     "Sell",
-    10.0,
-    0.1;
+    10.0;
     "PumpFun Sell quote via HTTP"
 )]
 #[tokio::test]
@@ -136,7 +135,6 @@ async fn test_pump_fun_quotes_http(
     bonding_curve_address: &str,
     quote_type: &str,
     amount: f64,
-    slippage: f64,
 ) -> Result<()> {
     let client = HTTPClient::new(None)?;
 
@@ -145,7 +143,6 @@ async fn test_pump_fun_quotes_http(
         bonding_curve_address: bonding_curve_address.to_string(),
         quote_type: quote_type.to_string(),
         amount,
-        slippage,
     };
 
     let response = client.get_pump_fun_quotes(&request).await?;
