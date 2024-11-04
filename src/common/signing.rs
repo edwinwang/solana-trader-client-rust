@@ -1,5 +1,3 @@
-// In src/common/signing.rs
-
 use anyhow::{anyhow, Result};
 use base64::{engine::general_purpose, Engine as _};
 use bincode::deserialize;
