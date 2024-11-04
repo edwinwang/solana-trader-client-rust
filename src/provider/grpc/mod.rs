@@ -2,8 +2,7 @@ pub mod quotes;
 pub mod streams;
 pub mod swaps;
 
-use anyhow::{anyhow, Result};
-use bincode::deserialize;
+use anyhow::Result;
 use rustls::crypto::ring::default_provider;
 use solana_sdk::pubkey::Pubkey;
 use solana_trader_proto::api;
@@ -14,10 +13,10 @@ use tonic::{
     metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel,
 };
 
-use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig, DEFAULT_TIMEOUT};
-use base64::{engine::general_purpose, Engine as _};
+use crate::common::constants::DEFAULT_TIMEOUT;
+use crate::common::signing::{get_keypair, sign_transaction};
+use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig};
 use solana_sdk::signature::Keypair;
-use solana_sdk::transaction::Transaction;
 use solana_trader_proto::api::{
     GetRecentBlockHashRequestV2, PostSubmitRequest, TransactionMessage,
 };
@@ -100,65 +99,29 @@ impl GrpcClient {
         use_staked_rpcs: bool,
         fast_best_effort: bool,
     ) -> Result<String> {
-        // Get keypair reference early to fail fast if not available
-        let keypair = self
-            .keypair
-            .as_ref()
-            .ok_or_else(|| anyhow!("No keypair available for signing"))?;
+        let keypair = get_keypair(&self.keypair)?;
 
-        // Decode transaction content
-        let rawbytes = general_purpose::STANDARD
-            .decode(&tx.content)
-            .map_err(|e| anyhow!("Failed to decode transaction content: {}", e))?;
-
-        // Deserialize transaction
-        let mut transaction: Transaction = deserialize(&rawbytes)
-            .map_err(|e| anyhow!("Failed to deserialize transaction: {}", e))?;
-
-        // Get recent blockhash
         let block_hash = self
             .client
             .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
-            .await
-            .map_err(|e| anyhow!("Failed to get recent blockhash: {}", e))?
+            .await?
             .into_inner()
             .block_hash;
 
-        // Parse blockhash and sign transaction
-        let parsed_hash = block_hash
-            .parse()
-            .map_err(|e| anyhow!("Failed to parse blockhash: {}", e))?;
+        let signed_tx = sign_transaction(&tx, keypair, block_hash).await?;
 
-        transaction
-            .try_partial_sign(&[keypair], parsed_hash)
-            .map_err(|e| anyhow!("Failed to sign transaction: {}", e))?;
-
-        // Serialize signed transaction
-        let bincode = bincode::serialize(&transaction)
-            .map_err(|e| anyhow!("Failed to serialize signed transaction: {}", e))?;
-
-        let encoded_rawbytes_base64 = general_purpose::STANDARD.encode(bincode);
-
-        // Prepare and submit request
         let req = PostSubmitRequest {
             transaction: Some(TransactionMessage {
-                content: encoded_rawbytes_base64,
-                is_cleanup: tx.is_cleanup,
+                content: signed_tx.content,
+                is_cleanup: signed_tx.is_cleanup,
             }),
             skip_pre_flight,
             front_running_protection: Some(front_running_protection),
-            tip: None,
             use_staked_rp_cs: Some(use_staked_rpcs),
             fast_best_effort: Some(fast_best_effort),
+            tip: None,
         };
 
-        // Submit and handle response
-        match self.client.post_submit(req).await {
-            Ok(response) => Ok(response.into_inner().signature),
-            Err(status) => Err(anyhow!(
-                "Transaction submission failed: {}",
-                status.message()
-            )),
-        }
+        Ok(self.client.post_submit(req).await?.into_inner().signature)
     }
 }

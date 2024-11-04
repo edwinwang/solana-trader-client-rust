@@ -37,7 +37,6 @@ impl WebSocketClient {
         &self,
         request: &api::GetPumpFunQuotesRequest,
     ) -> Result<api::GetPumpFunQuotesResponse> {
-        // Create a properly cased JSON structure
         let params = serde_json::json!({
             "quoteType": request.quote_type,
             "mintAddress": request.mint_address,

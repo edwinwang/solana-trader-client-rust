@@ -1,22 +1,12 @@
+pub mod constants;
+pub mod signing;
+
+use std::{env, str::FromStr};
+
 use anyhow::{anyhow, Result};
+use constants::{LOCAL, MAINNET_NY, MAINNET_PUMP_NY, MAINNET_PUMP_UK, MAINNET_UK, TESTNET};
 use dotenv::dotenv;
-use solana_sdk::signature::Keypair;
-use solana_sdk::{bs58::decode, pubkey::Pubkey};
-use std::str::FromStr;
-use std::{env, time::Duration};
-
-pub const LOCAL: &str = "localhost:9000";
-pub const TESTNET: &str = "solana.dex.bxrtest.com";
-pub const MAINNET_NY: &str = "ny.solana.dex.blxrbdn.com";
-pub const MAINNET_UK: &str = "uk.solana.dex.blxrbdn.com";
-pub const MAINNET_PUMP_NY: &str = "pump-ny.solana.dex.blxrbdn.com";
-pub const MAINNET_PUMP_UK: &str = "pump-uk.solana.dex.blxrbdn.com";
-
-// Common tokens
-pub const WRAPPED_SOL: &str = "So11111111111111111111111111111111111111112";
-pub const USDC: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-
-pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(30);
+use solana_sdk::{bs58::decode, pubkey::Pubkey, signature::Keypair};
 
 pub fn http_endpoint(base_url: &str, secure: bool) -> String {
     let prefix = if secure { "https" } else { "http" };

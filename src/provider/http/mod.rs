@@ -6,23 +6,25 @@ use reqwest::{
     Client,
 };
 use serde::de::DeserializeOwned;
-use solana_sdk::signature::Keypair;
+use serde_json::json;
+use solana_sdk::{pubkey::Pubkey, signature::Keypair};
+use solana_trader_proto::api::TransactionMessage;
 
 use crate::{
-    common::{get_base_url_from_env, http_endpoint, BaseConfig, DEFAULT_TIMEOUT},
+    common::{
+        constants::DEFAULT_TIMEOUT,
+        get_base_url_from_env, http_endpoint,
+        signing::{get_keypair, sign_transaction, SubmitParams},
+        BaseConfig,
+    },
     provider::utils::convert_string_enums,
 };
-
-#[derive(Debug)]
-pub struct HTTPClientConfig {
-    pub endpoint: String,
-    pub private_key: Option<Keypair>,
-    pub auth_header: String,
-}
 
 pub struct HTTPClient {
     client: Client,
     base_url: String,
+    keypair: Option<Keypair>,
+    pub public_key: Option<Pubkey>,
 }
 
 impl HTTPClient {
@@ -41,6 +43,8 @@ impl HTTPClient {
         Ok(Self {
             client,
             base_url: endpoint,
+            keypair: base.keypair,
+            public_key: base.public_key,
         })
     }
 
@@ -81,5 +85,51 @@ impl HTTPClient {
 
         serde_json::from_value(value)
             .map_err(|e| anyhow::anyhow!("Failed to parse response into desired type: {}", e))
+    }
+
+    pub async fn sign_and_submit(
+        &self,
+        tx: TransactionMessage,
+        skip_pre_flight: bool,
+        front_running_protection: bool,
+        use_staked_rpcs: bool,
+        fast_best_effort: bool,
+    ) -> Result<String> {
+        let keypair = get_keypair(&self.keypair)?;
+
+        let response = self
+            .client
+            .get(format!("{}/v2/get-recent-blockhash", self.base_url))
+            .send()
+            .await?;
+
+        let block_hash: String = self.handle_response(response).await?;
+        let signed_tx = sign_transaction(&tx, keypair, block_hash).await?;
+        let params = SubmitParams {
+            skip_pre_flight,
+            front_running_protection,
+            use_staked_rpcs,
+            fast_best_effort,
+        };
+
+        let response = self
+            .client
+            .post(format!("{}/v2/submit", self.base_url))
+            .json(&json!({
+                "transaction": signed_tx,
+                "skipPreFlight": params.skip_pre_flight,
+                "frontRunningProtection": params.front_running_protection,
+                "useStakedRPCs": params.use_staked_rpcs,
+                "fastBestEffort": params.fast_best_effort
+            }))
+            .send()
+            .await?;
+
+        let result: serde_json::Value = self.handle_response(response).await?;
+        result
+            .get("signature")
+            .and_then(|s| s.as_str())
+            .map(String::from)
+            .ok_or_else(|| anyhow!("Missing signature in response"))
     }
 }
