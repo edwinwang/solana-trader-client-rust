@@ -48,14 +48,11 @@ pub struct BaseConfig {
 
 impl BaseConfig {
     pub fn try_from_env() -> Result<Self> {
-        // Load .env file if present
         dotenv().ok();
 
-        // Get required auth header
         let auth_header = env::var("AUTH_HEADER")
             .map_err(|_| anyhow!("AUTH_HEADER environment variable not set"))?;
 
-        // Get optional public key
         let public_key = env::var("PUBLIC_KEY").ok().and_then(|pk_str| {
             Pubkey::from_str(&pk_str)
                 .map_err(|e| {
@@ -65,7 +62,6 @@ impl BaseConfig {
                 .ok()
         });
 
-        // Get optional private key and convert to keypair if present
         let keypair = if let Ok(private_key) = env::var("PRIVATE_KEY") {
             let mut output = [0; 64];
             match decode(private_key).onto(&mut output) {
