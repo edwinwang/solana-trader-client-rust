@@ -67,12 +67,6 @@ struct RequestTracker {
     ch: Sender<ResponseUpdate>,
 }
 
-#[derive(Serialize)]
-struct StreamRequest<T> {
-    stream_name: String,
-    params: T,
-}
-
 pub struct WS {
     stream: Arc<Mutex<WebSocketStream<tokio_tungstenite::MaybeTlsStream<TcpStream>>>>,
     write_tx: Sender<Message>,

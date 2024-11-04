@@ -1,13 +1,12 @@
 pub mod quotes;
 pub mod streams;
-use bincode::deserialize;
-use tonic::Request;
+pub mod swaps;
 
 use anyhow::Result;
+use bincode::deserialize;
 use rustls::crypto::ring::default_provider;
 use solana_trader_proto::api;
 use std::collections::HashMap;
-use std::io::Read;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
 use tonic::{
@@ -15,18 +14,12 @@ use tonic::{
 };
 
 use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig, DEFAULT_TIMEOUT};
-use base64::{
-    alphabet,
-    engine::{self, general_purpose},
-    Engine as _,
-};
-use serde::Serialize;
+use base64::{engine::general_purpose, Engine as _};
 use solana_sdk::signature::Keypair;
 use solana_sdk::transaction::Transaction;
 use solana_trader_proto::api::{
     GetRecentBlockHashRequestV2, PostSubmitRequest, TransactionMessage,
 };
-use std::str::FromStr;
 
 #[derive(Clone)]
 struct AuthInterceptor {
@@ -120,9 +113,6 @@ impl GrpcClient {
 
         let encoded_rawbytes_base64: String = general_purpose::STANDARD.encode(bincode.clone());
 
-        const CUSTOM_ENGINE: engine::GeneralPurpose =
-            engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
-
         let req = PostSubmitRequest {
             transaction: Some(TransactionMessage {
                 content: encoded_rawbytes_base64,
@@ -139,30 +129,5 @@ impl GrpcClient {
             Ok(v) => v.into_inner().signature,
             Err(v) => "failed to send".to_string() + "err: " + v.message(),
         }
-    }
-
-    pub async fn post_raydium_swap(
-        &mut self,
-        request: &api::PostRaydiumSwapRequest,
-    ) -> Result<api::PostRaydiumSwapResponse> {
-        let response = self
-            .client
-            .post_raydium_swap(Request::new(request.clone()))
-            .await
-            .map_err(|e| anyhow::anyhow!("PostRaydiumSwap error: {}", e))?;
-
-        Ok(response.into_inner())
-    }
-    pub async fn post_pumpfun_swap(
-        &mut self,
-        request: &api::PostPumpFunSwapRequest,
-    ) -> Result<api::PostPumpFunSwapResponse> {
-        let response = self
-            .client
-            .post_pump_fun_swap(Request::new(request.clone()))
-            .await
-            .map_err(|e| anyhow::anyhow!("PostPumpFunSwap error: {}", e))?;
-
-        Ok(response.into_inner())
     }
 }

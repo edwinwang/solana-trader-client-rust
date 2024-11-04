@@ -17,15 +17,25 @@ export REGION=<TARGET_REGION>
 
 **Available networks:**
 - MAINNET
+- MAINNET_PUMP
 - TESTNET
 - LOCAL
 
 **Available regions:**
 - NY
 - UK
-- PUMP
 
-**If no region is defined, the SDK will use NY MAINNET**
+You can also save these constants to a .env file like so:
+
+```bash
+PUBLIC_KEY="...."
+PRIVATE_KEY="......."
+AUTH_HEADER="......"
+NETWORK=MAINNET
+REGION=NY
+```
+
+**If no region is defined, the SDK will use default to LOCAL**
 
 # Running tests
 

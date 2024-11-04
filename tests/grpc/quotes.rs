@@ -136,11 +136,13 @@ async fn test_pump_fun_quotes_grpc(
 ) -> Result<()> {
     let mut client = GrpcClient::new(None).await?;
 
+    // note slippage is still needed as part of the proto
     let request = api::GetPumpFunQuotesRequest {
         mint_address: mint_address.to_string(),
         bonding_curve_address: bonding_curve_address.to_string(),
         quote_type: quote_type.to_string(),
         amount,
+        slippage,
     };
 
     let response = client.get_pump_fun_quotes(&request).await?;

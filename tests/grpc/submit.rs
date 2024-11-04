@@ -94,6 +94,7 @@ async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
         bonding_curve_address: bonding_curve_address.to_string(),
         amount: in_amount,
         mint_address: mint_address.to_string(),
+        slippage: 0.0,
     };
 
     let pump_quote_response = client.get_pump_fun_quotes(&request).await?;
@@ -106,7 +107,6 @@ async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
         sol_threshold: pump_quote_response.in_amount,
         compute_limit: 300000,
         compute_price: 2000,
-        slippage: slippage,
         tip: Some(2000001),
         is_buy: true,
     };
