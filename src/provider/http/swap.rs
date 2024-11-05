@@ -45,6 +45,20 @@ impl HTTPClient {
         self.handle_response(response).await
     }
 
+    pub async fn post_raydium_clmm_route_swap(
+        &self,
+        request: &api::PostRaydiumRouteSwapRequest,
+    ) -> Result<api::PostRaydiumRouteSwapResponse> {
+        let response = self
+            .client
+            .post(format!("{}/api/v2/raydium/clmm-route-swap", self.base_url))
+            .json(&request)
+            .send()
+            .await?;
+
+        self.handle_response(response).await
+    }
+
     pub async fn post_jupiter_swap(
         &self,
         request: &api::PostJupiterSwapRequest,
@@ -52,6 +66,20 @@ impl HTTPClient {
         let response = self
             .client
             .post(format!("{}/api/v2/jupiter/swap", self.base_url))
+            .json(&request)
+            .send()
+            .await?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn post_jupiter_route_swap(
+        &self,
+        request: &api::PostJupiterRouteSwapRequest,
+    ) -> Result<api::PostJupiterRouteSwapResponse> {
+        let response = self
+            .client
+            .post(format!("{}/api/v2/jupiter/route-swap", self.base_url))
             .json(&request)
             .send()
             .await?;

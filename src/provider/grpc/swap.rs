@@ -44,15 +44,15 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
-    pub async fn post_pump_swap(
+    pub async fn post_raydium_clmm_route_swap(
         &mut self,
-        request: &api::PostPumpFunSwapRequest,
-    ) -> Result<api::PostPumpFunSwapResponse> {
+        request: &api::PostRaydiumRouteSwapRequest,
+    ) -> Result<api::PostRaydiumRouteSwapResponse> {
         let response = self
             .client
-            .post_pump_fun_swap(Request::new(request.clone()))
+            .post_raydium_clmm_route_swap(Request::new(request.clone()))
             .await
-            .map_err(|e| anyhow::anyhow!("PostPumpFunSwap error: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("PostRaydiumCLMMRouteSwap error: {}", e))?;
 
         Ok(response.into_inner())
     }
@@ -66,6 +66,32 @@ impl GrpcClient {
             .post_jupiter_swap(Request::new(request.clone()))
             .await
             .map_err(|e| anyhow::anyhow!("PostJupiterSwap error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn post_jupiter_route_swap(
+        &mut self,
+        request: &api::PostJupiterRouteSwapRequest,
+    ) -> Result<api::PostJupiterRouteSwapResponse> {
+        let response = self
+            .client
+            .post_jupiter_route_swap(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostJupiterRouteSwap error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn post_pump_swap(
+        &mut self,
+        request: &api::PostPumpFunSwapRequest,
+    ) -> Result<api::PostPumpFunSwapResponse> {
+        let response = self
+            .client
+            .post_pump_fun_swap(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostPumpFunSwap error: {}", e))?;
 
         Ok(response.into_inner())
     }

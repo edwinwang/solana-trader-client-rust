@@ -3,6 +3,7 @@ use solana_trader_client_rust::common::{constants::USDC, constants::WRAPPED_SOL}
 use solana_trader_client_rust::provider::http::HTTPClient;
 use solana_trader_proto::api;
 use solana_trader_proto::api::TransactionMessage;
+use solana_trader_proto::common::Fee;
 use test_case::test_case;
 
 #[test_case(
@@ -178,6 +179,76 @@ async fn test_raydium_clmm_swap_http(
 }
 
 #[test_case(
+    "HDa3zJc12ahykSsBRvgiWzr6WLEByf36yzKKbVvy4gnF", // Input token (USDC)
+    "So11111111111111111111111111111111111111112",   // Output token (SOL)
+    0.000303,                                         // Input amount
+    0.00064,                                          // Output amount
+    0.0006005,                                        // Minimum output amount
+    0.1;                                              // Slippage
+    "Raydium CLMM Route USDC to SOL swap via HTTP"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_raydium_clmm_route_swap_http(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    out_amount: f64,
+    out_amount_min: f64,
+    slippage: f64,
+) -> Result<()> {
+    let client = HTTPClient::new(None)?;
+
+    let request = api::PostRaydiumRouteSwapRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Raydium CLMM route swap"))
+            .to_string(),
+        slippage,
+        steps: vec![api::RaydiumRouteStep {
+            in_token: in_token.to_string(),
+            out_token: out_token.to_string(),
+            in_amount,
+            out_amount,
+            out_amount_min,
+            pool_address: "".to_string(),
+            project: Some(api::StepProject {
+                label: "".to_string(),
+                id: "".to_string(),
+            }),
+        }],
+        compute_limit: 300000,
+        compute_price: 10000,
+        tip: Some(10000),
+    };
+
+    let response = client.post_raydium_clmm_route_swap(&request).await?;
+    println!(
+        "Raydium CLMM Route Quote: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+
+    let txs = response.transactions.as_slice();
+    for tx in txs {
+        let s = client
+            .sign_and_submit(
+                TransactionMessage {
+                    content: tx.clone().content,
+                    is_cleanup: tx.is_cleanup,
+                },
+                true,
+                false,
+                false,
+                false,
+            )
+            .await;
+        println!("Raydium CLMM Route signature: {}", s?);
+    }
+
+    Ok(())
+}
+
+#[test_case(
     WRAPPED_SOL,
     USDC,
     0.01,
@@ -230,6 +301,82 @@ async fn test_jupiter_swap_http(
             )
             .await;
         println!("Jupiter signature: {}", s?);
+    }
+
+    Ok(())
+}
+
+// TODO: does not work
+// Error: RPC error: {"code":-32603,"data":"Jupiter API error: Market 61acRgpURKTU8LKPJKs6WQa18KzD9ogavXzjxfD84KLu not found","message":"Internal error"}
+#[test_case(
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // Input token (USDC)
+    "So11111111111111111111111111111111111111112",   // Output token (SOL)
+    0.01,                                             // Input amount
+    0.000123425,                                      // Output amount
+    0.000123117,                                      // Minimum output amount
+    0.25;                                             // Slippage
+    "Jupiter Route USDC to SOL swap via Raydium HTTP"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_jupiter_route_swap_http(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    out_amount: f64,
+    out_amount_min: f64,
+    slippage: f64,
+) -> Result<()> {
+    let client = HTTPClient::new(None)?;
+
+    let request = api::PostJupiterRouteSwapRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Jupiter route swap"))
+            .to_string(),
+        slippage,
+        steps: vec![api::JupiterRouteStep {
+            project: Some(api::StepProject {
+                label: "Raydium".to_string(),
+                id: "61acRgpURKTU8LKPJKs6WQa18KzD9ogavXzjxfD84KLu".to_string(),
+            }),
+            in_token: in_token.to_string(),
+            out_token: out_token.to_string(),
+            in_amount,
+            out_amount,
+            out_amount_min,
+            fee: Some(Fee {
+                amount: 0.000025,
+                mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v".to_string(),
+                percent: 0.0025062656,
+            }),
+        }],
+        compute_limit: 300000,
+        compute_price: 10000,
+        tip: Some(10000),
+    };
+
+    let response = client.post_jupiter_route_swap(&request).await?;
+    println!(
+        "Jupiter Route Quote: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+
+    let txs = response.transactions.as_slice();
+    for tx in txs {
+        let s = client
+            .sign_and_submit(
+                TransactionMessage {
+                    content: tx.clone().content,
+                    is_cleanup: tx.is_cleanup,
+                },
+                true,
+                false,
+                false,
+                false,
+            )
+            .await;
+        println!("Jupiter Route signature: {}", s?);
     }
 
     Ok(())
