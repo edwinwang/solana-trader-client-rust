@@ -17,6 +17,20 @@ impl HTTPClient {
         self.handle_response(response).await
     }
 
+    pub async fn post_raydium_route_swap(
+        &self,
+        request: &api::PostRaydiumRouteSwapRequest,
+    ) -> Result<api::PostRaydiumRouteSwapResponse> {
+        let response = self
+            .client
+            .post(format!("{}/api/v2/raydium/route-swap", self.base_url))
+            .json(&request)
+            .send()
+            .await?;
+
+        self.handle_response(response).await
+    }
+
     pub async fn post_raydium_cpmm_swap(
         &self,
         request: &api::PostRaydiumCpmmSwapRequest,

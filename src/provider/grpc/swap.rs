@@ -18,6 +18,19 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
+    pub async fn post_raydium_route_swap(
+        &mut self,
+        request: &api::PostRaydiumRouteSwapRequest,
+    ) -> Result<api::PostRaydiumRouteSwapResponse> {
+        let response = self
+            .client
+            .post_raydium_route_swap(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostRaydiumRouteSwap error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
     pub async fn post_raydium_cpmm_swap(
         &mut self,
         request: &api::PostRaydiumCpmmSwapRequest,

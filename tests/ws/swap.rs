@@ -73,6 +73,77 @@ async fn test_raydium_swap_ws(
 }
 
 #[test_case(
+    "So11111111111111111111111111111111111111112",   // Input token (SOL)
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // Output token (USDC)
+    0.01,                                             // Input amount
+    0.0074,                                           // Output amount
+    0.007505,                                         // Minimum output amount
+    0.1;                                              // Slippage
+    "Raydium Route SOL to USDC swap via WebSocket"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_raydium_route_swap_ws(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    out_amount: f64,
+    out_amount_min: f64,
+    slippage: f64,
+) -> Result<()> {
+    let client = WebSocketClient::new(None).await?;
+
+    let request = api::PostRaydiumRouteSwapRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Raydium route swap"))
+            .to_string(),
+        slippage,
+        steps: vec![api::RaydiumRouteStep {
+            in_token: in_token.to_string(),
+            out_token: out_token.to_string(),
+            in_amount,
+            out_amount,
+            out_amount_min,
+            pool_address: "".to_string(),
+            project: Some(api::StepProject {
+                label: "Raydium".to_string(),
+                id: "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2".to_string(),
+            }),
+        }],
+        compute_limit: 300000,
+        compute_price: 10000,
+        tip: Some(10000),
+    };
+
+    let response = client.post_raydium_route_swap(&request).await?;
+    println!(
+        "Raydium Route Quote: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+
+    let txs = response.transactions.as_slice();
+    for tx in txs {
+        let s = client
+            .sign_and_submit(
+                TransactionMessage {
+                    content: tx.clone().content,
+                    is_cleanup: tx.is_cleanup,
+                },
+                true,
+                false,
+                false,
+                false,
+            )
+            .await;
+        println!("Raydium Route signature: {}", s?);
+    }
+
+    client.close().await?;
+    Ok(())
+}
+
+#[test_case(
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
     "So11111111111111111111111111111111111111112",   // SOL
     0.01,

@@ -23,6 +23,22 @@ impl WebSocketClient {
         self.conn.request("PostRaydiumSwap", params).await
     }
 
+    pub async fn post_raydium_route_swap(
+        &self,
+        request: &api::PostRaydiumRouteSwapRequest,
+    ) -> Result<api::PostRaydiumRouteSwapResponse> {
+        let params = json!({
+            "ownerAddress": request.owner_address,
+            "slippage": request.slippage,
+            "steps": request.steps,
+            "computeLimit": request.compute_limit,
+            "computePrice": request.compute_price,
+            "tip": request.tip,
+        });
+
+        self.conn.request("PostRaydiumRouteSwap", params).await
+    }
+
     pub async fn post_raydium_cpmm_swap(
         &self,
         request: &api::PostRaydiumCpmmSwapRequest,
