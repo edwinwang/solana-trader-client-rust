@@ -17,6 +17,33 @@ impl GrpcClient {
 
         Ok(response.into_inner())
     }
+
+    pub async fn post_raydium_cpmm_swap(
+        &mut self,
+        request: &api::PostRaydiumCpmmSwapRequest,
+    ) -> Result<api::PostRaydiumCpmmSwapResponse> {
+        let response = self
+            .client
+            .post_raydium_cpmm_swap(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostRaydiumCPMMSwap error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn post_raydium_clmm_swap(
+        &mut self,
+        request: &api::PostRaydiumSwapRequest,
+    ) -> Result<api::PostRaydiumSwapResponse> {
+        let response = self
+            .client
+            .post_raydium_clmm_swap(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostRaydiumCLMMSwap error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
     pub async fn post_pump_swap(
         &mut self,
         request: &api::PostPumpFunSwapRequest,

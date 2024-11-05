@@ -122,6 +122,11 @@ impl GrpcClient {
             tip: None,
         };
 
-        Ok(self.client.post_submit(req).await?.into_inner().signature)
+        Ok(self
+            .client
+            .post_submit_v2(req)
+            .await?
+            .into_inner()
+            .signature)
     }
 }

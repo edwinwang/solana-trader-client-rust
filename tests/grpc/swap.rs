@@ -67,64 +67,117 @@ async fn test_raydium_swap_grpc(
 }
 
 #[test_case(
-    0.0001,
-    10.0;
-    "Pumpfun swap"
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+    "So11111111111111111111111111111111111111112",   // SOL
+    0.01,
+    0.5;
+    "Raydium CPMM USDC to SOL swap"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
-    dotenv().ok();
-    let bonding_curve_address = "Fh8fnZUVEpPStJ2hKFNNjMAyuyvoJLMouENawg4DYCBc";
-    let mint_address = "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump";
-    env::set_var("NETWORK", "MAINNET_PUMP");
+async fn test_raydium_cpmm_swap_grpc(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    slippage: f64,
+) -> Result<()> {
     let mut client = GrpcClient::new(None).await?;
 
-    let request = api::GetPumpFunQuotesRequest {
-        quote_type: "buy".to_string(),
-        bonding_curve_address: bonding_curve_address.to_string(),
-        amount: in_amount,
-        mint_address: mint_address.to_string(),
-    };
-
-    let pump_quote_response = client.get_pump_fun_quotes(&request).await?;
-
-    let request = api::PostPumpFunSwapRequest {
-        user_address: client
+    let request = api::PostRaydiumCpmmSwapRequest {
+        owner_address: client
             .public_key
-            .unwrap_or_else(|| panic!("Public key is required for pump fun swap"))
+            .unwrap_or_else(|| panic!("Public key is required for Raydium CPMM swap"))
             .to_string(),
-        bonding_curve_address: bonding_curve_address.to_string(),
-        token_address: "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump".to_string(),
-        token_amount: pump_quote_response.out_amount,
-        sol_threshold: pump_quote_response.in_amount,
+        pool_address: "".to_string(),
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
         compute_limit: 300000,
         compute_price: 2000,
         tip: Some(2000001),
-        is_buy: true,
-        slippage,
     };
 
-    let response = client.post_pump_swap(&request).await?;
+    let response = client.post_raydium_cpmm_swap(&request).await?;
     println!(
-        "pumpfun Quote: {}",
+        "Raydium CPMM Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
 
-    let tx_content = response.transaction.unwrap().content;
-    let s = client
-        .sign_and_submit(
-            TransactionMessage {
-                content: tx_content,
-                is_cleanup: false,
-            },
-            true,
-            false,
-            false,
-            false,
-        )
-        .await;
-    println!("signature : {}", s?);
+    let txs = response.transaction.as_slice();
+    for tx in txs {
+        let s = client
+            .sign_and_submit(
+                TransactionMessage {
+                    content: tx.clone().content,
+                    is_cleanup: tx.is_cleanup,
+                },
+                true,
+                false,
+                false,
+                false,
+            )
+            .await;
+        println!("Raydium CPMM signature: {}", s?);
+    }
+
+    Ok(())
+}
+
+#[test_case(
+    "So11111111111111111111111111111111111111112",   // SOL
+    "HDa3zJc12ahykSsBRvgiWzr6WLEByf36yzKKbVvy4gnF", // USDC
+    0.0089,
+    0.1;
+    "Raydium CLMM SOL to USDC swap via gRPC"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_raydium_clmm_swap_grpc(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    slippage: f64,
+) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let request = api::PostRaydiumSwapRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Raydium CLMM swap"))
+            .to_string(),
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
+        compute_limit: 300000,
+        compute_price: 10000,
+        tip: Some(10000),
+    };
+
+    let response = client.post_raydium_clmm_swap(&request).await?;
+    println!(
+        "Raydium CLMM Quote: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+
+    let txs = response.transactions.as_slice();
+    for tx in txs {
+        let s = client
+            .sign_and_submit(
+                TransactionMessage {
+                    content: tx.clone().content,
+                    is_cleanup: tx.is_cleanup,
+                },
+                true,
+                false,
+                false,
+                false,
+            )
+            .await;
+        println!("Raydium CLMM signature: {}", s?);
+    }
+
     Ok(())
 }
 
@@ -183,5 +236,67 @@ async fn test_jupiter_swap_grpc(
         println!("Jupiter signature: {}", s?);
     }
 
+    Ok(())
+}
+
+#[test_case(
+    0.0001,
+    10.0;
+    "Pumpfun swap"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
+    dotenv().ok();
+    let bonding_curve_address = "Fh8fnZUVEpPStJ2hKFNNjMAyuyvoJLMouENawg4DYCBc";
+    let mint_address = "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump";
+    env::set_var("NETWORK", "MAINNET_PUMP");
+    let mut client = GrpcClient::new(None).await?;
+
+    let request = api::GetPumpFunQuotesRequest {
+        quote_type: "buy".to_string(),
+        bonding_curve_address: bonding_curve_address.to_string(),
+        amount: in_amount,
+        mint_address: mint_address.to_string(),
+    };
+
+    let pump_quote_response = client.get_pump_fun_quotes(&request).await?;
+
+    let request = api::PostPumpFunSwapRequest {
+        user_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for pump fun swap"))
+            .to_string(),
+        bonding_curve_address: bonding_curve_address.to_string(),
+        token_address: "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump".to_string(),
+        token_amount: pump_quote_response.out_amount,
+        sol_threshold: pump_quote_response.in_amount,
+        compute_limit: 300000,
+        compute_price: 2000,
+        tip: Some(2000001),
+        is_buy: true,
+        slippage,
+    };
+
+    let response = client.post_pump_swap(&request).await?;
+    println!(
+        "pumpfun Quote: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+
+    let tx_content = response.transaction.unwrap().content;
+    let s = client
+        .sign_and_submit(
+            TransactionMessage {
+                content: tx_content,
+                is_cleanup: false,
+            },
+            true,
+            false,
+            false,
+            false,
+        )
+        .await;
+    println!("signature : {}", s?);
     Ok(())
 }

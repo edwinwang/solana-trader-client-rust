@@ -75,14 +75,10 @@ impl HTTPClient {
 
         let res = response.text().await?;
 
-        println!("{:?}", res);
-
         let mut value = serde_json::from_str(&res)
             .map_err(|e| anyhow::anyhow!("Failed to parse response as JSON: {}", e))?;
 
         convert_string_enums(&mut value);
-
-        println!("After conversion: {}", value);
 
         serde_json::from_value(value)
             .map_err(|e| anyhow::anyhow!("Failed to parse response into desired type: {}", e))
@@ -115,11 +111,6 @@ impl HTTPClient {
             "frontRunningProtection": front_running_protection,
             "useStakedRPCs": use_staked_rpcs
         });
-
-        println!(
-            "DEBUG Submit Request:\n{}",
-            serde_json::to_string_pretty(&request_json)?
-        );
 
         let response = self
             .client
