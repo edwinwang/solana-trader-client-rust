@@ -1,10 +1,7 @@
 use anyhow::Result;
 use dotenv::dotenv;
 use solana_trader_client_rust::{
-    common::{
-        self,
-        constants::{USDC, WRAPPED_SOL},
-    },
+    common::constants::{USDC, WRAPPED_SOL},
     provider::grpc::GrpcClient,
 };
 use solana_trader_proto::api;
@@ -313,7 +310,7 @@ async fn test_jupiter_swap_grpc(
     Ok(())
 }
 
-// NOTE: does not work
+// TODO: does not work
 // Error: RPC error: {"code":-32603,"data":"Jupiter API error: Market 61acRgpURKTU8LKPJKs6WQa18KzD9ogavXzjxfD84KLu not found","message":"Internal error"}
 #[test_case(
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // Input token (USDC)
