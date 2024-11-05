@@ -1,14 +1,15 @@
-pub mod quotes;
-pub mod streams;
+pub mod quote;
+pub mod stream;
+pub mod swap;
 
 use anyhow::{anyhow, Result};
 use serde_json::json;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
-use solana_trader_proto::api::TransactionMessage;
+use solana_trader_proto::api::{GetRecentBlockHashResponseV2, TransactionMessage};
 use tokio::time::timeout;
 
-use crate::common::signing::{get_keypair, sign_transaction, SubmitParams};
+use crate::common::signing::{get_keypair, sign_transaction};
 use crate::common::{constants::DEFAULT_TIMEOUT, get_base_url_from_env, ws_endpoint, BaseConfig};
 use crate::connections::ws::WS;
 
@@ -57,33 +58,25 @@ impl WebSocketClient {
         skip_pre_flight: bool,
         front_running_protection: bool,
         use_staked_rpcs: bool,
-        fast_best_effort: bool,
+        _fast_best_effort: bool,
     ) -> Result<String> {
         let keypair = get_keypair(&self.keypair)?;
 
-        let block_hash: String = self.conn.request("getRecentBlockhash", json!([0])).await?;
+        let hash_res: GetRecentBlockHashResponseV2 =
+            self.conn.request("GetRecentBlockHashV2", json!({})).await?;
 
-        let signed_tx = sign_transaction(&tx, keypair, block_hash).await?;
-        let params = SubmitParams {
-            skip_pre_flight,
-            front_running_protection,
-            use_staked_rpcs,
-            fast_best_effort,
-        };
+        let signed_tx = sign_transaction(&tx, keypair, hash_res.block_hash).await?;
 
-        let response: serde_json::Value = self
-            .conn
-            .request(
-                "submitTransaction",
-                json!([{
-                    "transaction": signed_tx,
-                    "skipPreFlight": params.skip_pre_flight,
-                    "frontRunningProtection": params.front_running_protection,
-                    "useStakedRPCs": params.use_staked_rpcs,
-                    "fastBestEffort": params.fast_best_effort
-                }]),
-            )
-            .await?;
+        let request = json!({
+            "transaction": {
+                "content": signed_tx.content
+            },
+            "skipPreFlight": skip_pre_flight,
+            "frontRunningProtection": front_running_protection,
+            "useStakedRPCs": use_staked_rpcs
+        });
+
+        let response: serde_json::Value = self.conn.request("PostSubmitV2", request).await?;
 
         response
             .get("signature")

@@ -1,28 +1,29 @@
 use anyhow::Result;
-
 use solana_trader_client_rust::{
-    common::{USDC, WRAPPED_SOL},
-    provider::http::HTTPClient,
+    common::{constants::USDC, constants::WRAPPED_SOL},
+    provider::ws::WebSocketClient,
 };
 use solana_trader_proto::api;
+use std::time::Duration;
 use test_case::test_case;
+use tokio::time::timeout;
 
 #[test_case(
-    WRAPPED_SOL,
-    USDC,
-    1.0,
-    0.1 ;
-    "SOL to USDC quote via HTTP"
-)]
+        WRAPPED_SOL,
+        USDC,
+        0.01,
+        5.0 ;
+        "SOL to USDC quote"
+    )]
 #[tokio::test]
 #[ignore]
-async fn test_raydium_quotes_http(
+async fn test_raydium_quotes_ws(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
     slippage: f64,
 ) -> Result<()> {
-    let client = HTTPClient::new(None)?;
+    let client = WebSocketClient::new(None).await?;
 
     let request = api::GetRaydiumQuotesRequest {
         in_token: in_token.to_string(),
@@ -31,36 +32,39 @@ async fn test_raydium_quotes_http(
         slippage,
     };
 
-    let response = client.get_raydium_quotes(&request).await?;
+    let response = timeout(Duration::from_secs(10), client.get_raydium_quotes(&request))
+        .await
+        .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+
     println!(
         "Raydium Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
-
     assert!(
         !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
+    client.close().await?;
     Ok(())
 }
 
 #[test_case(
     WRAPPED_SOL,
     USDC,
-    1.0,
-    0.1;
-    "SOL to USDC Cpmm quote via HTTP"
+    0.01,
+    5.0;
+    "SOL to USDC CPMM quote"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_raydium_cpmm_quotes_http(
+async fn test_raydium_cpmm_quotes_ws(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
     slippage: f64,
 ) -> Result<()> {
-    let client = HTTPClient::new(None)?;
+    let client = WebSocketClient::new(None).await?;
 
     let request = api::GetRaydiumCpmmQuotesRequest {
         in_token: in_token.to_string(),
@@ -69,9 +73,15 @@ async fn test_raydium_cpmm_quotes_http(
         slippage,
     };
 
-    let response = client.get_raydium_cpmm_quotes(&request).await?;
+    let response = timeout(
+        Duration::from_secs(10),
+        client.get_raydium_cpmm_quotes(&request),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+
     println!(
-        "Raydium Cpmm Quote: {}",
+        "Raydium CPMM Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
 
@@ -80,25 +90,26 @@ async fn test_raydium_cpmm_quotes_http(
         "Expected at least one route in response"
     );
 
+    client.close().await?;
     Ok(())
 }
 
 #[test_case(
     WRAPPED_SOL,
     USDC,
-    1.0,
-    0.1;
-    "SOL to USDC Clmm quote via HTTP"
+    0.01,
+    5.0;
+    "SOL to USDC CLMM quote"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_raydium_clmm_quotes_http(
+async fn test_raydium_clmm_quotes_ws(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
     slippage: f64,
 ) -> Result<()> {
-    let client = HTTPClient::new(None)?;
+    let client = WebSocketClient::new(None).await?;
 
     let request = api::GetRaydiumClmmQuotesRequest {
         in_token: in_token.to_string(),
@@ -107,36 +118,43 @@ async fn test_raydium_clmm_quotes_http(
         slippage,
     };
 
-    let response = client.get_raydium_clmm_quotes(&request).await?;
+    let response = timeout(
+        Duration::from_secs(10),
+        client.get_raydium_clmm_quotes(&request),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+
     println!(
-        "Raydium Clmm Quote: {}",
+        "Raydium CLMM Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
-
     assert!(
         !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
+    client.close().await?;
     Ok(())
 }
 
+// TODO: 10/31 remove when works: unknown field "slippage"
 #[test_case(
-    "BAHY8ocERNc5j6LqkYav1Prr8GBGsHvBV5X3dWPhsgXw",
-    "7BcRpqUC7AF5Xsc3QEpCb8xmoi2X1LpwjUBNThbjWvyo",
-    "Sell",
-    10.0;
-    "PumpFun Sell quote via HTTP"
+    "BAHY8ocERNc5j6LqkYav1Prr8GBGsHvBV5X3dWPhsgXw",  // Token address
+    "7BcRpqUC7AF5Xsc3QEpCb8xmoi2X1LpwjUBNThbjWvyo",  // Bonding curve address
+    "Sell",                                            // Quote type
+    10.0;                                             // Amount
+    "PumpFun Sell quote"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_pump_fun_quotes_http(
+async fn test_pump_fun_quotes_ws(
     mint_address: &str,
     bonding_curve_address: &str,
     quote_type: &str,
     amount: f64,
 ) -> Result<()> {
-    let client = HTTPClient::new(None)?;
+    let client = WebSocketClient::new(None).await?;
 
     let request = api::GetPumpFunQuotesRequest {
         mint_address: mint_address.to_string(),
@@ -145,33 +163,42 @@ async fn test_pump_fun_quotes_http(
         amount,
     };
 
-    let response = client.get_pump_fun_quotes(&request).await?;
+    let response = timeout(
+        Duration::from_secs(10),
+        client.get_pump_fun_quotes(&request),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+
     println!(
         "PumpFun Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
+    assert!(
+        response.out_amount > 0.0,
+        "Expected non-zero out amount in response"
+    );
 
-    assert!(response.out_amount > 0.0, "Expected non-zero out amount");
-
+    client.close().await?;
     Ok(())
 }
 
 #[test_case(
     WRAPPED_SOL,
     USDC,
-    1.0,
-    0.1;
-    "SOL to USDC Jupiter quote via HTTP"
+    0.01,
+    5.0;
+    "SOL to USDC Jupiter quote"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_jupiter_quotes_http(
+async fn test_jupiter_quotes_ws(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
     slippage: f64,
 ) -> Result<()> {
-    let client = HTTPClient::new(None)?;
+    let client = WebSocketClient::new(None).await?;
 
     let fast_mode = true;
     let request = api::GetJupiterQuotesRequest {
@@ -182,17 +209,20 @@ async fn test_jupiter_quotes_http(
         fast_mode: Some(fast_mode),
     };
 
-    let response = client.get_jupiter_quotes(&request).await?;
+    let response = timeout(Duration::from_secs(10), client.get_jupiter_quotes(&request))
+        .await
+        .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+
     println!(
         "Jupiter Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
-
     assert!(
         !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
+    client.close().await?;
     Ok(())
 }
 
@@ -203,11 +233,11 @@ async fn test_jupiter_quotes_http(
     5.0,
     5,
     vec![api::Project::PAll];
-    "SOL to USDC aggregated quotes via HTTP"
+    "SOL to USDC aggregated quotes via WebSocket"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_get_quotes_http(
+async fn test_get_quotes_ws(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
@@ -215,11 +245,21 @@ async fn test_get_quotes_http(
     limit: i32,
     projects: Vec<api::Project>,
 ) -> Result<()> {
-    let client = HTTPClient::new(None)?;
+    let client = WebSocketClient::new(None).await?;
 
-    let response = client
-        .get_quotes(in_token, out_token, in_amount, slippage, limit, &projects)
-        .await?;
+    let request = api::GetQuotesRequest {
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
+        limit,
+        projects: projects.iter().map(|p| *p as i32).collect(),
+    };
+
+    let response = timeout(Duration::from_secs(10), client.get_quotes(&request))
+        .await
+        .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+
     println!(
         "Aggregated Quotes: {}",
         serde_json::to_string_pretty(&response)?
@@ -239,5 +279,6 @@ async fn test_get_quotes_http(
         );
     }
 
+    client.close().await?;
     Ok(())
 }

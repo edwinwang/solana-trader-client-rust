@@ -1,4 +1,5 @@
-pub mod quotes;
+pub mod quote;
+pub mod swap;
 
 use anyhow::{anyhow, Result};
 use reqwest::{
@@ -8,13 +9,13 @@ use reqwest::{
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair};
-use solana_trader_proto::api::TransactionMessage;
+use solana_trader_proto::api::{GetRecentBlockHashResponseV2, TransactionMessage};
 
 use crate::{
     common::{
         constants::DEFAULT_TIMEOUT,
         get_base_url_from_env, http_endpoint,
-        signing::{get_keypair, sign_transaction, SubmitParams},
+        signing::{get_keypair, sign_transaction},
         BaseConfig,
     },
     provider::utils::convert_string_enums,
@@ -90,38 +91,40 @@ impl HTTPClient {
     pub async fn sign_and_submit(
         &self,
         tx: TransactionMessage,
-        skip_pre_flight: bool,
+        _skip_pre_flight: bool,
         front_running_protection: bool,
         use_staked_rpcs: bool,
-        fast_best_effort: bool,
+        _fast_best_effort: bool,
     ) -> Result<String> {
         let keypair = get_keypair(&self.keypair)?;
 
         let response = self
             .client
-            .get(format!("{}/v2/get-recent-blockhash", self.base_url))
+            .get(format!(
+                "{}/api/v2/system/blockhash?offset={}",
+                self.base_url, 0
+            ))
             .send()
             .await?;
 
-        let block_hash: String = self.handle_response(response).await?;
-        let signed_tx = sign_transaction(&tx, keypair, block_hash).await?;
-        let params = SubmitParams {
-            skip_pre_flight,
-            front_running_protection,
-            use_staked_rpcs,
-            fast_best_effort,
-        };
+        let res: GetRecentBlockHashResponseV2 = self.handle_response(response).await?;
+        let signed_tx = sign_transaction(&tx, keypair, res.block_hash).await?;
+
+        let request_json = json!({
+            "transaction": { "content": signed_tx.content},
+            "frontRunningProtection": front_running_protection,
+            "useStakedRPCs": use_staked_rpcs
+        });
+
+        println!(
+            "DEBUG Submit Request:\n{}",
+            serde_json::to_string_pretty(&request_json)?
+        );
 
         let response = self
             .client
-            .post(format!("{}/v2/submit", self.base_url))
-            .json(&json!({
-                "transaction": signed_tx,
-                "skipPreFlight": params.skip_pre_flight,
-                "frontRunningProtection": params.front_running_protection,
-                "useStakedRPCs": params.use_staked_rpcs,
-                "fastBestEffort": params.fast_best_effort
-            }))
+            .post(format!("{}/api/v2/submit", self.base_url))
+            .json(&request_json)
             .send()
             .await?;
 

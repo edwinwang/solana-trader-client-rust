@@ -1,7 +1,8 @@
 use anyhow::Result;
+
 use solana_trader_client_rust::{
-    common::{USDC, WRAPPED_SOL},
-    provider::grpc::GrpcClient,
+    common::{constants::USDC, constants::WRAPPED_SOL},
+    provider::http::HTTPClient,
 };
 use solana_trader_proto::api;
 use test_case::test_case;
@@ -9,18 +10,19 @@ use test_case::test_case;
 #[test_case(
     WRAPPED_SOL,
     USDC,
-    0.1,
-    0.2;
-    "BTC to USDC with higher slippage"
+    1.0,
+    0.1 ;
+    "SOL to USDC quote via HTTP"
 )]
 #[tokio::test]
-async fn test_raydium_quotes_grpc(
+#[ignore]
+async fn test_raydium_quotes_http(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
     slippage: f64,
 ) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let client = HTTPClient::new(None)?;
 
     let request = api::GetRaydiumQuotesRequest {
         in_token: in_token.to_string(),
@@ -34,8 +36,9 @@ async fn test_raydium_quotes_grpc(
         "Raydium Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
+
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -45,19 +48,19 @@ async fn test_raydium_quotes_grpc(
 #[test_case(
     WRAPPED_SOL,
     USDC,
-    0.01,
-    5.0;
-    "SOL to USDC CPMM quote"
+    1.0,
+    0.1;
+    "SOL to USDC Cpmm quote via HTTP"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_raydium_cpmm_quotes_grpc(
+async fn test_raydium_cpmm_quotes_http(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
     slippage: f64,
 ) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let client = HTTPClient::new(None)?;
 
     let request = api::GetRaydiumCpmmQuotesRequest {
         in_token: in_token.to_string(),
@@ -68,11 +71,12 @@ async fn test_raydium_cpmm_quotes_grpc(
 
     let response = client.get_raydium_cpmm_quotes(&request).await?;
     println!(
-        "Raydium CPMM Quote: {}",
+        "Raydium Cpmm Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
+
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -82,19 +86,19 @@ async fn test_raydium_cpmm_quotes_grpc(
 #[test_case(
     WRAPPED_SOL,
     USDC,
-    0.01,
-    5.0;
-    "SOL to USDC CLMM quote"
+    1.0,
+    0.1;
+    "SOL to USDC Clmm quote via HTTP"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_raydium_clmm_quotes_grpc(
+async fn test_raydium_clmm_quotes_http(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
     slippage: f64,
 ) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let client = HTTPClient::new(None)?;
 
     let request = api::GetRaydiumClmmQuotesRequest {
         in_token: in_token.to_string(),
@@ -105,11 +109,12 @@ async fn test_raydium_clmm_quotes_grpc(
 
     let response = client.get_raydium_clmm_quotes(&request).await?;
     println!(
-        "Raydium CLMM Quote: {}",
+        "Raydium Clmm Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
+
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -117,23 +122,22 @@ async fn test_raydium_clmm_quotes_grpc(
 }
 
 #[test_case(
-    "BAHY8ocERNc5j6LqkYav1Prr8GBGsHvBV5X3dWPhsgXw",  // Token address
-    "7BcRpqUC7AF5Xsc3QEpCb8xmoi2X1LpwjUBNThbjWvyo",  // Bonding curve address
-    "Sell",                                            // Quote type
-    10.0 ;                                            // Amount
-    "PumpFun Sell quote"
+    "BAHY8ocERNc5j6LqkYav1Prr8GBGsHvBV5X3dWPhsgXw",
+    "7BcRpqUC7AF5Xsc3QEpCb8xmoi2X1LpwjUBNThbjWvyo",
+    "Sell",
+    10.0;
+    "PumpFun Sell quote via HTTP"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_pump_fun_quotes_grpc(
+async fn test_pump_fun_quotes_http(
     mint_address: &str,
     bonding_curve_address: &str,
     quote_type: &str,
     amount: f64,
 ) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let client = HTTPClient::new(None)?;
 
-    // note slippage is still needed as part of the proto
     let request = api::GetPumpFunQuotesRequest {
         mint_address: mint_address.to_string(),
         bonding_curve_address: bonding_curve_address.to_string(),
@@ -146,10 +150,8 @@ async fn test_pump_fun_quotes_grpc(
         "PumpFun Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
-    assert!(
-        response.out_amount > 0.0,
-        "Expected non-zero out amount in response"
-    );
+
+    assert!(response.out_amount > 0.0, "Expected non-zero out amount");
 
     Ok(())
 }
@@ -157,26 +159,27 @@ async fn test_pump_fun_quotes_grpc(
 #[test_case(
     WRAPPED_SOL,
     USDC,
-    0.01,
-    5.0;
-    "SOL to USDC Jupiter quote"
+    1.0,
+    0.1;
+    "SOL to USDC Jupiter quote via HTTP"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_jupiter_quotes_grpc(
+async fn test_jupiter_quotes_http(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
     slippage: f64,
 ) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let client = HTTPClient::new(None)?;
 
+    let fast_mode = true;
     let request = api::GetJupiterQuotesRequest {
         in_token: in_token.to_string(),
         out_token: out_token.to_string(),
         in_amount,
         slippage,
-        fast_mode: None,
+        fast_mode: Some(fast_mode),
     };
 
     let response = client.get_jupiter_quotes(&request).await?;
@@ -184,8 +187,9 @@ async fn test_jupiter_quotes_grpc(
         "Jupiter Quote: {}",
         serde_json::to_string_pretty(&response)?
     );
+
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -199,11 +203,11 @@ async fn test_jupiter_quotes_grpc(
     5.0,
     5,
     vec![api::Project::PAll];
-    "SOL to USDC aggregated quotes via gRPC"
+    "SOL to USDC aggregated quotes via HTTP"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_get_quotes_grpc(
+async fn test_get_quotes_http(
     in_token: &str,
     out_token: &str,
     in_amount: f64,
@@ -211,18 +215,11 @@ async fn test_get_quotes_grpc(
     limit: i32,
     projects: Vec<api::Project>,
 ) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let client = HTTPClient::new(None)?;
 
-    let request = api::GetQuotesRequest {
-        in_token: in_token.to_string(),
-        out_token: out_token.to_string(),
-        in_amount,
-        slippage,
-        limit,
-        projects: projects.iter().map(|p| *p as i32).collect(),
-    };
-
-    let response = client.get_quotes(&request).await?;
+    let response = client
+        .get_quotes(in_token, out_token, in_amount, slippage, limit, &projects)
+        .await?;
     println!(
         "Aggregated Quotes: {}",
         serde_json::to_string_pretty(&response)?

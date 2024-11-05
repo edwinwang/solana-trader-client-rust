@@ -76,8 +76,10 @@ Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and 
 ```json
 {
     "rust-analyzer.runnables.extraEnv": {
-        "AUTH_HEADER": "<AUTH_HEADER>",
-        "NETWORK": "<TARGET_NETWORK>",
+        "PRIVATE_KEY": "...",
+        "PUBLIC_KEY": "...",
+        "AUTH_HEADER": "...",
+        "NETWORK": "MAINNET",
     },
     "rust-analyzer.runnables.extraArgs": [
         "--",

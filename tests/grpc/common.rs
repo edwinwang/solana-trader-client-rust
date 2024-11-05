@@ -1,5 +1,5 @@
 use anyhow::Result;
-use solana_trader_client_rust::{common::WRAPPED_SOL, provider::grpc::GrpcClient};
+use solana_trader_client_rust::{common::constants::WRAPPED_SOL, provider::grpc::GrpcClient};
 use solana_trader_proto::api;
 use std::time::Duration;
 use test_case::test_case;

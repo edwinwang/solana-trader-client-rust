@@ -29,4 +29,17 @@ impl GrpcClient {
 
         Ok(response.into_inner())
     }
+
+    pub async fn post_jupiter_swap(
+        &mut self,
+        request: &api::PostJupiterSwapRequest,
+    ) -> Result<api::PostJupiterSwapResponse> {
+        let response = self
+            .client
+            .post_jupiter_swap(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostJupiterSwap error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
 }

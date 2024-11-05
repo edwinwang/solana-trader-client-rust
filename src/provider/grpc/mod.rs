@@ -1,6 +1,6 @@
-pub mod quotes;
-pub mod streams;
-pub mod swaps;
+pub mod quote;
+pub mod stream;
+pub mod swap;
 
 use anyhow::Result;
 use rustls::crypto::ring::default_provider;

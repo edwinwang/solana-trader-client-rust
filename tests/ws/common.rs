@@ -1,6 +1,6 @@
 use anyhow::Result;
 use futures_util::StreamExt;
-use solana_trader_client_rust::{common::WRAPPED_SOL, provider::ws::WebSocketClient};
+use solana_trader_client_rust::{common::constants::WRAPPED_SOL, provider::ws::WebSocketClient};
 use solana_trader_proto::api;
 use std::time::Duration;
 use test_case::test_case;
