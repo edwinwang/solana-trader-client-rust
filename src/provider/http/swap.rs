@@ -86,4 +86,32 @@ impl HTTPClient {
 
         self.handle_response(response).await
     }
+
+    pub async fn post_trade_swap(
+        &self,
+        request: &api::TradeSwapRequest,
+    ) -> Result<api::TradeSwapResponse> {
+        let response = self
+            .client
+            .post(format!("{}/api/v2/trade/swap", self.base_url))
+            .json(&request)
+            .send()
+            .await?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn post_route_trade_swap(
+        &self,
+        request: &api::RouteTradeSwapRequest,
+    ) -> Result<api::TradeSwapResponse> {
+        let response = self
+            .client
+            .post(format!("{}/api/v2/trade/route-swap", self.base_url))
+            .json(&request)
+            .send()
+            .await?;
+
+        self.handle_response(response).await
+    }
 }
