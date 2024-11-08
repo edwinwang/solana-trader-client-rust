@@ -266,6 +266,7 @@ impl WS {
         Ok(
             tokio_stream::wrappers::ReceiverStream::new(rx).map(|value: Value| {
                 let mut modified_value = value;
+                println!("{:#?}", modified_value);
                 convert_string_enums(&mut modified_value);
 
                 serde_json::from_value(modified_value)

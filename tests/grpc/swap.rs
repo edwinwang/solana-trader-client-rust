@@ -384,7 +384,7 @@ async fn test_jupiter_swap_grpc(
 // Error: RPC error: {"code":-32603,"data":"Jupiter API error: Market 61acRgpURKTU8LKPJKs6WQa18KzD9ogavXzjxfD84KLu not found","message":"Internal error"}
 #[test_case(
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // Input token (USDC)
-    "So11111111111111111111111111111111111111112",   // Output token (SOL)
+    "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",   // Output token (SOL)
     0.01,                                             // Input amount
     0.000123425,                                      // Output amount
     0.000123117,                                      // Minimum output amount

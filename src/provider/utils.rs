@@ -36,7 +36,60 @@ pub fn convert_string_enums(value: &mut Value) {
                             convert_string_enums(val);
                         }
                     }
-                    // Convert infinity fields in priceImpactPercent
+                    "height" => {
+                        if val.is_string() {
+                            if let Some(trade_fee_rate) = val.as_str() {
+                                *val = json!(trade_fee_rate.parse::<u64>().unwrap())
+                            }
+                        } else {
+                            convert_string_enums(val);
+                        }
+                    }
+                    "slot" => {
+                        if val.is_string() {
+                            if let Some(slot) = val.as_str() {
+                                *val = json!(slot.parse::<i64>().unwrap())
+                            }
+                        } else {
+                            convert_string_enums(val);
+                        }
+                    }
+                    "time" => {
+                        if val.is_string() {
+                            if let Some(slot) = val.as_str() {
+                                *val = json!(slot.parse::<i64>().unwrap())
+                            }
+                        } else {
+                            convert_string_enums(val);
+                        }
+                    }
+                    "token1Reserves" => {
+                        if val.is_string() {
+                            if let Some(slot) = val.as_str() {
+                                *val = json!(slot.parse::<i64>().unwrap())
+                            }
+                        } else {
+                            convert_string_enums(val);
+                        }
+                    }
+                    "token2Reserves" => {
+                        if val.is_string() {
+                            if let Some(slot) = val.as_str() {
+                                *val = json!(slot.parse::<i64>().unwrap())
+                            }
+                        } else {
+                            convert_string_enums(val);
+                        }
+                    }
+                    "openTime" => {
+                        if val.is_string() {
+                            if let Some(slot) = val.as_str() {
+                                *val = json!(slot.parse::<i64>().unwrap())
+                            }
+                        } else {
+                            convert_string_enums(val);
+                        }
+                    }
                     "infinity" => {
                         if let Some(infinity_str) = val.as_str() {
                             let mapped = match infinity_str {

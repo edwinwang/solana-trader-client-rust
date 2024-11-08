@@ -7,10 +7,9 @@ use serde_json::json;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::{GetRecentBlockHashResponseV2, TransactionMessage};
-use tokio::time::timeout;
 
 use crate::common::signing::{get_keypair, sign_transaction};
-use crate::common::{constants::DEFAULT_TIMEOUT, get_base_url_from_env, ws_endpoint, BaseConfig};
+use crate::common::{get_base_url_from_env, ws_endpoint, BaseConfig};
 use crate::connections::ws::WS;
 
 pub struct WebSocketConfig {
@@ -37,9 +36,9 @@ impl WebSocketClient {
             return Err(anyhow::anyhow!("AUTH_HEADER is empty"));
         }
 
-        let conn = timeout(DEFAULT_TIMEOUT, WS::new(Some(endpoint)))
+        let conn = WS::new(Some(endpoint))
             .await
-            .map_err(|e| anyhow::anyhow!("Connection timeout: {}", e))??;
+            .map_err(|e| anyhow::anyhow!("Connection timeout: {}", e))?;
 
         Ok(Self {
             conn,

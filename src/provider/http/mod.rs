@@ -13,7 +13,6 @@ use solana_trader_proto::api::{GetRecentBlockHashResponseV2, TransactionMessage}
 
 use crate::{
     common::{
-        constants::DEFAULT_TIMEOUT,
         get_base_url_from_env, http_endpoint,
         signing::{get_keypair, sign_transaction},
         BaseConfig,
@@ -37,7 +36,6 @@ impl HTTPClient {
         let headers = Self::build_headers(&base.auth_header)?;
         let client = Client::builder()
             .default_headers(headers)
-            .timeout(DEFAULT_TIMEOUT)
             .build()
             .map_err(|e| anyhow!("Failed to create HTTP client: {}", e))?;
 

@@ -44,6 +44,8 @@ tokio-stream = { version = "0.1.16", features = ["sync"] }
 bincode = "1.3.3"
 env_logger = "0.11.5"
 async-trait = "0.1.83"
+tracing = "0.1.40"
+serial_test = "3.1.1"
 
 [dev-dependencies]
 test-case = "3.3.1"
