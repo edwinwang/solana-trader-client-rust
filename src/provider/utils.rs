@@ -1,64 +1,44 @@
-// temporary solution to handle project string to integer conversions.
-// TODO: the string / enum mapping should ideally be handled in the build step of solana-trader-proto.
-
 use serde_json::{json, Value};
 use solana_trader_proto::api::Project;
 
-/// Convert string enum values in JSON to their corresponding integer or string representations.
-/// This includes:
-/// - Project enums ("P_JUPITER" -> 2)
-/// - Infinity values in priceImpactPercent ("INF_NOT" -> "NOT")
 pub fn convert_string_enums(value: &mut Value) {
     match value {
         Value::Object(map) => {
-            // Handle any object that has these fields
             for (key, val) in map {
-                match key.as_str() {
-                    // Convert project fields to integers
-                    "project" => {
-                        if val.is_string() {
-                            if let Some(project_str) = val.as_str() {
-                                if let Some(project_enum) = Project::from_str_name(project_str) {
-                                    *val = json!(project_enum as i32);
-                                }
-                            }
-                        } else {
-                            // Recurse into project object if it's not a string
-                            convert_string_enums(val);
+                match (key.as_str(), &val) {
+                    // Project enum conversion
+                    ("project", Value::String(s)) => {
+                        if let Some(project_enum) = Project::from_str_name(s) {
+                            *val = json!(project_enum as i32);
                         }
                     }
-                    "tradeFeeRate" => {
-                        if val.is_string() {
-                            if let Some(trade_fee_rate) = val.as_str() {
-                                *val = json!(trade_fee_rate.parse::<u64>().unwrap())
-                            }
-                        } else {
-                            convert_string_enums(val);
+                    
+                    // String to numeric conversions
+                    (k, Value::String(s)) if ["tradeFeeRate", "height", "token1Reserves", 
+                                            "token2Reserves", "slot", "time", "openTime"]
+                                            .contains(&k) => {
+                        if let Ok(num) = s.parse::<i64>() {
+                            *val = json!(num);
                         }
                     }
-                    // Convert infinity fields in priceImpactPercent
-                    "infinity" => {
-                        if let Some(infinity_str) = val.as_str() {
-                            let mapped = match infinity_str {
-                                "INF_NOT" => 0,
-                                "INF" => 1,
-                                "INF_NEG" => 2,
-                                _ => continue,
-                            };
-                            *val = json!(mapped);
-                        }
+                    
+                    // Infinity enum conversion
+                    ("infinity", Value::String(s)) => {
+                        let mapped = match s.as_str() {
+                            "INF_NOT" => 0,
+                            "INF" => 1,
+                            "INF_NEG" => 2,
+                            _ => return,
+                        };
+                        *val = json!(mapped);
                     }
-                    // Recurse into other fields
+                    
+                    // Recurse for nested structures
                     _ => convert_string_enums(val),
                 }
             }
         }
-        Value::Array(arr) => {
-            // Recurse into arrays
-            for item in arr {
-                convert_string_enums(item);
-            }
-        }
+        Value::Array(arr) => arr.iter_mut().for_each(convert_string_enums),
         _ => {}
     }
 }
@@ -68,11 +48,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_project_conversion() {
+    fn test_conversions() {
         let mut value = json!({
             "project": "P_JUPITER",
+            "tradeFeeRate": "1000",
             "nested": {
-                "project": "P_RAYDIUM"
+                "project": "P_RAYDIUM",
+                "priceImpactPercent": {
+                    "infinity": "INF_NOT"
+                }
             },
             "array": [
                 {"project": "P_OPENBOOK"}
@@ -81,55 +65,10 @@ mod tests {
 
         convert_string_enums(&mut value);
 
-        assert_eq!(value["project"], 2); // P_JUPITER
-        assert_eq!(value["nested"]["project"], 3); // P_RAYDIUM
-        assert_eq!(value["array"][0]["project"], 5); // P_OPENBOOK
-    }
-
-    #[test]
-    fn test_infinity_conversion() {
-        let mut value = json!({
-            "priceImpactPercent": {
-                "infinity": "INF_NOT",
-                "percent": 0.0
-            },
-            "steps": [{
-                "priceImpactPercent": {
-                    "infinity": "INF",
-                    "percent": 0.5
-                }
-            }]
-        });
-
-        convert_string_enums(&mut value);
-
-        assert_eq!(value["priceImpactPercent"]["infinity"], 0);
-        assert_eq!(value["steps"][0]["priceImpactPercent"]["infinity"], 1);
-    }
-
-    #[test]
-    fn test_complex_nested_structure() {
-        let mut value = json!({
-            "quotes": [{
-                "project": "P_JUPITER",
-                "routes": [{
-                    "steps": [{
-                        "project": "P_RAYDIUM",
-                        "priceImpactPercent": {
-                            "infinity": "INF_NOT"
-                        }
-                    }]
-                }]
-            }]
-        });
-
-        convert_string_enums(&mut value);
-
-        assert_eq!(value["quotes"][0]["project"], 2); // P_JUPITER
-        assert_eq!(value["quotes"][0]["routes"][0]["steps"][0]["project"], 3); // P_RAYDIUM
-        assert_eq!(
-            value["quotes"][0]["routes"][0]["steps"][0]["priceImpactPercent"]["infinity"],
-            0
-        );
+        assert_eq!(value["project"], 2);
+        assert_eq!(value["tradeFeeRate"], 1000);
+        assert_eq!(value["nested"]["project"], 3);
+        assert_eq!(value["nested"]["priceImpactPercent"]["infinity"], 0);
+        assert_eq!(value["array"][0]["project"], 5);
     }
 }

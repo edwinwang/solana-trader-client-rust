@@ -225,17 +225,6 @@ impl WS {
             return Err(anyhow::anyhow!("RPC error: {}", error));
         }
 
-        // tradeFeeRate come in as a string, and so causes a parsing error without casting to the expected u64.
-        // if let Some(obj) = json_response.get_mut("result") {
-        //     if let Some(fee_rate) = obj.get("tradeFeeRate") {
-        //         if let Some(fee_str) = fee_rate.as_str() {
-        //             if let Ok(fee_num) = fee_str.parse::<u64>() {
-        //                 obj["tradeFeeRate"] = json!(fee_num);
-        //             }
-        //         }
-        //     }
-        // }
-
         let result = json_response
             .get("result")
             .ok_or_else(|| anyhow::anyhow!("Missing result field in response"))?;
@@ -277,6 +266,7 @@ impl WS {
         Ok(
             tokio_stream::wrappers::ReceiverStream::new(rx).map(|value: Value| {
                 let mut modified_value = value;
+                println!("{:#?}", modified_value);
                 convert_string_enums(&mut modified_value);
 
                 serde_json::from_value(modified_value)

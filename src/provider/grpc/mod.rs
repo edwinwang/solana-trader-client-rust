@@ -13,7 +13,6 @@ use tonic::{
     metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel,
 };
 
-use crate::common::constants::DEFAULT_TIMEOUT;
 use crate::common::signing::{get_keypair, sign_transaction};
 use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig};
 use solana_sdk::signature::Keypair;
@@ -74,7 +73,6 @@ impl GrpcClient {
 
         let channel = Channel::from_shared(endpoint.clone())
             .map_err(|e| anyhow::anyhow!("Invalid URI: {}", e))?
-            .timeout(DEFAULT_TIMEOUT)
             .tls_config(ClientTlsConfig::new().with_webpki_roots())
             .map_err(|e| anyhow::anyhow!("TLS config error: {}", e))?
             .connect()
@@ -122,6 +120,11 @@ impl GrpcClient {
             tip: None,
         };
 
-        Ok(self.client.post_submit(req).await?.into_inner().signature)
+        Ok(self
+            .client
+            .post_submit_v2(req)
+            .await?
+            .into_inner()
+            .signature)
     }
 }
