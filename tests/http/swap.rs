@@ -2,7 +2,6 @@ use anyhow::Result;
 use solana_trader_client_rust::common::{constants::USDC, constants::WRAPPED_SOL};
 use solana_trader_client_rust::provider::http::HTTPClient;
 use solana_trader_proto::api;
-use solana_trader_proto::api::TransactionMessage;
 use solana_trader_proto::common::Fee;
 use test_case::test_case;
 
@@ -44,21 +43,10 @@ async fn test_raydium_swap_http(
     );
 
     let txs = response.transactions.as_slice();
-    for tx in txs {
-        let s = client
-            .sign_and_submit(
-                TransactionMessage {
-                    content: tx.clone().content,
-                    is_cleanup: tx.is_cleanup,
-                },
-                true,
-                false,
-                false,
-                false,
-            )
-            .await;
-        println!("Raydium signature: {}", s?);
-    }
+    let s = client
+        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .await;
+    println!("Raydium signature: {:#?}", s?);
 
     Ok(())
 }
@@ -114,21 +102,10 @@ async fn test_raydium_route_swap_http(
     );
 
     let txs = response.transactions.as_slice();
-    for tx in txs {
-        let s = client
-            .sign_and_submit(
-                TransactionMessage {
-                    content: tx.clone().content,
-                    is_cleanup: tx.is_cleanup,
-                },
-                true,
-                false,
-                false,
-                false,
-            )
-            .await;
-        println!("Raydium Route signature: {}", s?);
-    }
+    let s = client
+        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .await;
+    println!("Raydium signature: {:#?}", s?);
 
     Ok(())
 }
@@ -172,21 +149,10 @@ async fn test_raydium_cpmm_swap_http(
     );
 
     let txs = response.transaction.as_slice();
-    for tx in txs {
-        let s = client
-            .sign_and_submit(
-                TransactionMessage {
-                    content: tx.clone().content,
-                    is_cleanup: tx.is_cleanup,
-                },
-                true,
-                false,
-                false,
-                false,
-            )
-            .await;
-        println!("Raydium CPMM signature: {}", s?);
-    }
+    let s = client
+        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .await;
+    println!("Raydium signature: {:#?}", s?);
 
     Ok(())
 }
@@ -229,21 +195,10 @@ async fn test_raydium_clmm_swap_http(
     );
 
     let txs = response.transactions.as_slice();
-    for tx in txs {
-        let s = client
-            .sign_and_submit(
-                TransactionMessage {
-                    content: tx.clone().content,
-                    is_cleanup: tx.is_cleanup,
-                },
-                true,
-                false,
-                false,
-                false,
-            )
-            .await;
-        println!("Raydium CLMM signature: {}", s?);
-    }
+    let s = client
+        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .await;
+    println!("Raydium signature: {:#?}", s?);
 
     Ok(())
 }
@@ -299,21 +254,10 @@ async fn test_raydium_clmm_route_swap_http(
     );
 
     let txs = response.transactions.as_slice();
-    for tx in txs {
-        let s = client
-            .sign_and_submit(
-                TransactionMessage {
-                    content: tx.clone().content,
-                    is_cleanup: tx.is_cleanup,
-                },
-                true,
-                false,
-                false,
-                false,
-            )
-            .await;
-        println!("Raydium CLMM Route signature: {}", s?);
-    }
+    let s = client
+        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .await;
+    println!("Raydium signature: {:#?}", s?);
 
     Ok(())
 }
@@ -357,21 +301,10 @@ async fn test_jupiter_swap_http(
     );
 
     let txs = response.transactions.as_slice();
-    for tx in txs {
-        let s = client
-            .sign_and_submit(
-                TransactionMessage {
-                    content: tx.clone().content,
-                    is_cleanup: tx.is_cleanup,
-                },
-                true,
-                false,
-                false,
-                false,
-            )
-            .await;
-        println!("Jupiter signature: {}", s?);
-    }
+    let s = client
+        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .await;
+    println!("Raydium signature: {:#?}", s?);
 
     Ok(())
 }
@@ -433,21 +366,10 @@ async fn test_jupiter_route_swap_http(
     );
 
     let txs = response.transactions.as_slice();
-    for tx in txs {
-        let s = client
-            .sign_and_submit(
-                TransactionMessage {
-                    content: tx.clone().content,
-                    is_cleanup: tx.is_cleanup,
-                },
-                true,
-                false,
-                false,
-                false,
-            )
-            .await;
-        println!("Jupiter Route signature: {}", s?);
-    }
+    let s = client
+        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .await;
+    println!("Raydium signature: {:#?}", s?);
 
     Ok(())
 }

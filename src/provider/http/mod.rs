@@ -9,7 +9,7 @@ use reqwest::{
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair};
-use solana_trader_proto::api::{GetRecentBlockHashResponseV2, TransactionMessage};
+use solana_trader_proto::api::GetRecentBlockHashResponseV2;
 
 use crate::{
     common::{
@@ -19,6 +19,8 @@ use crate::{
     },
     provider::utils::convert_string_enums,
 };
+
+use super::utils::IntoTransactionMessage;
 
 pub struct HTTPClient {
     client: Client,
@@ -82,16 +84,18 @@ impl HTTPClient {
             .map_err(|e| anyhow::anyhow!("Failed to parse response into desired type: {}", e))
     }
 
-    pub async fn sign_and_submit(
+    pub async fn sign_and_submit<T: IntoTransactionMessage + Clone>(
         &self,
-        tx: TransactionMessage,
-        _skip_pre_flight: bool,
+        txs: Vec<T>,
+        skip_pre_flight: bool,
         front_running_protection: bool,
         use_staked_rpcs: bool,
-        _fast_best_effort: bool,
-    ) -> Result<String> {
+        fast_best_effort: bool,
+        use_bundle: bool,
+    ) -> Result<Vec<String>> {
         let keypair = get_keypair(&self.keypair)?;
 
+        // Get recent blockhash
         let response = self
             .client
             .get(format!(
@@ -102,26 +106,74 @@ impl HTTPClient {
             .await?;
 
         let res: GetRecentBlockHashResponseV2 = self.handle_response(response).await?;
-        let signed_tx = sign_transaction(&tx, keypair, res.block_hash).await?;
+
+        // Handle single transaction case
+        if txs.len() == 1 {
+            let signed_tx = sign_transaction(&txs[0], keypair, res.block_hash).await?;
+
+            let request_json = json!({
+                "transaction": { "content": signed_tx.content, "isCleanup": signed_tx.is_cleanup },
+                "skipPreFlight": skip_pre_flight,
+                "frontRunningProtection": front_running_protection,
+                "useStakedRPCs": use_staked_rpcs,
+                "fastBestEffort": fast_best_effort
+            });
+
+            let response = self
+                .client
+                .post(format!("{}/api/v2/submit", self.base_url))
+                .json(&request_json)
+                .send()
+                .await?;
+
+            let result: serde_json::Value = self.handle_response(response).await?;
+            return Ok(vec![result
+                .get("signature")
+                .and_then(|s| s.as_str())
+                .map(String::from)
+                .ok_or_else(|| anyhow!("Missing signature in response"))?]);
+        }
+
+        // Handle batch case
+        let mut entries = Vec::with_capacity(txs.len());
+        for tx in txs {
+            let signed_tx = sign_transaction(&tx, keypair, res.block_hash.clone()).await?;
+            entries.push(json!({
+                "transaction": {
+                    "content": signed_tx.content,
+                    "isCleanup": signed_tx.is_cleanup
+                },
+                "skipPreFlight": skip_pre_flight,
+                "frontRunningProtection": front_running_protection,
+                "useStakedRPCs": use_staked_rpcs,
+                "fastBestEffort": fast_best_effort
+            }));
+        }
 
         let request_json = json!({
-            "transaction": { "content": signed_tx.content},
-            "frontRunningProtection": front_running_protection,
-            "useStakedRPCs": use_staked_rpcs
+            "entries": entries,
+            "useBundle": use_bundle,
+            "submitStrategy": 0
         });
 
         let response = self
             .client
-            .post(format!("{}/api/v2/submit", self.base_url))
+            .post(format!("{}/api/v2/submit/batch", self.base_url))
             .json(&request_json)
             .send()
             .await?;
 
         let result: serde_json::Value = self.handle_response(response).await?;
-        result
-            .get("signature")
-            .and_then(|s| s.as_str())
-            .map(String::from)
-            .ok_or_else(|| anyhow!("Missing signature in response"))
+
+        // Extract signatures from successful transactions
+        let signatures = result["transactions"]
+            .as_array()
+            .ok_or_else(|| anyhow!("Invalid response format"))?
+            .iter()
+            .filter(|entry| entry["submitted"].as_bool().unwrap_or(false))
+            .filter_map(|entry| entry["signature"].as_str().map(String::from))
+            .collect();
+
+        Ok(signatures)
     }
 }

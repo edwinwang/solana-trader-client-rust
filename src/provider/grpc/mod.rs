@@ -20,6 +20,8 @@ use solana_trader_proto::api::{
     GetRecentBlockHashRequestV2, PostSubmitRequest, TransactionMessage,
 };
 
+use super::utils::IntoTransactionMessage;
+
 #[derive(Clone)]
 struct AuthInterceptor {
     headers: HashMap<&'static str, String>,
@@ -89,14 +91,15 @@ impl GrpcClient {
         })
     }
 
-    pub async fn sign_and_submit(
+    pub async fn sign_and_submit<T: IntoTransactionMessage + Clone>(
         &mut self,
-        tx: TransactionMessage,
+        txs: Vec<T>,
         skip_pre_flight: bool,
         front_running_protection: bool,
         use_staked_rpcs: bool,
         fast_best_effort: bool,
-    ) -> Result<String> {
+        use_bundle: bool,
+    ) -> Result<Vec<String>> {
         let keypair = get_keypair(&self.keypair)?;
 
         let block_hash = self
@@ -106,25 +109,65 @@ impl GrpcClient {
             .into_inner()
             .block_hash;
 
-        let signed_tx = sign_transaction(&tx, keypair, block_hash).await?;
+        if txs.len() == 1 {
+            let signed_tx = sign_transaction(&txs[0], keypair, block_hash).await?;
 
-        let req = PostSubmitRequest {
-            transaction: Some(TransactionMessage {
-                content: signed_tx.content,
-                is_cleanup: signed_tx.is_cleanup,
-            }),
-            skip_pre_flight,
+            let req = PostSubmitRequest {
+                transaction: Some(TransactionMessage {
+                    content: signed_tx.content,
+                    is_cleanup: signed_tx.is_cleanup,
+                }),
+                skip_pre_flight,
+                front_running_protection: Some(front_running_protection),
+                use_staked_rp_cs: Some(use_staked_rpcs),
+                fast_best_effort: Some(fast_best_effort),
+                tip: None,
+            };
+
+            let signature = self
+                .client
+                .post_submit_v2(req)
+                .await?
+                .into_inner()
+                .signature;
+
+            return Ok(vec![signature]);
+        }
+
+        let mut entries = Vec::with_capacity(txs.len());
+        for tx in txs {
+            let signed_tx = sign_transaction(&tx, keypair, block_hash.clone()).await?;
+
+            let entry = api::PostSubmitRequestEntry {
+                transaction: Some(TransactionMessage {
+                    content: signed_tx.content,
+                    is_cleanup: signed_tx.is_cleanup,
+                }),
+                skip_pre_flight,
+            };
+            entries.push(entry);
+        }
+
+        let batch_request = api::PostSubmitBatchRequest {
+            entries,
+            use_bundle: Some(use_bundle),
+            submit_strategy: 0,
             front_running_protection: Some(front_running_protection),
-            use_staked_rp_cs: Some(use_staked_rpcs),
-            fast_best_effort: Some(fast_best_effort),
-            tip: None,
         };
 
-        Ok(self
+        let response = self
             .client
-            .post_submit_v2(req)
+            .post_submit_batch_v2(batch_request)
             .await?
-            .into_inner()
-            .signature)
+            .into_inner();
+
+        let signatures = response
+            .transactions
+            .into_iter()
+            .filter(|entry| entry.submitted)
+            .map(|entry| entry.signature)
+            .collect();
+
+        Ok(signatures)
     }
 }

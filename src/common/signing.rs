@@ -8,7 +8,8 @@ use solana_sdk::{
     signer::Signer,
     transaction::{Transaction, VersionedTransaction},
 };
-use solana_trader_proto::api::TransactionMessage;
+
+use crate::provider::utils::IntoTransactionMessage;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SubmitParams {
@@ -35,12 +36,15 @@ pub struct SignedTransaction {
     pub is_cleanup: bool,
 }
 
-pub async fn sign_transaction(
-    tx: &TransactionMessage,
+pub async fn sign_transaction<T: IntoTransactionMessage + Clone>(
+    tx: &T,
     keypair: &Keypair,
     blockhash: String,
 ) -> Result<SignedTransaction> {
-    let rawbytes = general_purpose::STANDARD.decode(&tx.content)?;
+    // Convert to TransactionMessage using existing trait
+    let tx_message = tx.clone().into_transaction_message();
+
+    let rawbytes = general_purpose::STANDARD.decode(&tx_message.content)?;
 
     let result = bincode::deserialize::<VersionedTransaction>(&rawbytes);
 
@@ -73,7 +77,7 @@ pub async fn sign_transaction(
 
     Ok(SignedTransaction {
         content: general_purpose::STANDARD.encode(signed_data),
-        is_cleanup: tx.is_cleanup,
+        is_cleanup: tx_message.is_cleanup,
     })
 }
 

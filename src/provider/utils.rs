@@ -1,5 +1,24 @@
 use serde_json::{json, Value};
-use solana_trader_proto::api::Project;
+use solana_trader_proto::api::{Project, TransactionMessage, TransactionMessageV2};
+
+pub trait IntoTransactionMessage {
+    fn into_transaction_message(self) -> TransactionMessage;
+}
+
+impl IntoTransactionMessage for TransactionMessage {
+    fn into_transaction_message(self) -> TransactionMessage {
+        self
+    }
+}
+
+impl IntoTransactionMessage for TransactionMessageV2 {
+    fn into_transaction_message(self) -> TransactionMessage {
+        TransactionMessage {
+            content: self.content,
+            is_cleanup: false,
+        }
+    }
+}
 
 pub fn convert_string_enums(value: &mut Value) {
     match value {
@@ -12,16 +31,25 @@ pub fn convert_string_enums(value: &mut Value) {
                             *val = json!(project_enum as i32);
                         }
                     }
-                    
+
                     // String to numeric conversions
-                    (k, Value::String(s)) if ["tradeFeeRate", "height", "token1Reserves", 
-                                            "token2Reserves", "slot", "time", "openTime"]
-                                            .contains(&k) => {
+                    (k, Value::String(s))
+                        if [
+                            "tradeFeeRate",
+                            "height",
+                            "token1Reserves",
+                            "token2Reserves",
+                            "slot",
+                            "time",
+                            "openTime",
+                        ]
+                        .contains(&k) =>
+                    {
                         if let Ok(num) = s.parse::<i64>() {
                             *val = json!(num);
                         }
                     }
-                    
+
                     // Infinity enum conversion
                     ("infinity", Value::String(s)) => {
                         let mapped = match s.as_str() {
@@ -32,7 +60,7 @@ pub fn convert_string_enums(value: &mut Value) {
                         };
                         *val = json!(mapped);
                     }
-                    
+
                     // Recurse for nested structures
                     _ => convert_string_enums(val),
                 }
