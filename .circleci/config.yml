@@ -7,7 +7,6 @@ executors:
       CARGO_HOME: /home/circleci/cargo
       WORKSPACE: /home/circleci/cargo/src/github.com/bloXroute-Labs/solana-trader-client-rust
       RUSTFLAGS: "-D warnings"
-      PROTOC: /usr/bin/protoc  # Explicitly set protoc path
     working_directory: /home/circleci/cargo/src/github.com/bloXroute-Labs/solana-trader-client-rust
 
 jobs:
@@ -21,18 +20,10 @@ jobs:
           keys:
             - v1-cargo-cache-{{ checksum "Cargo.lock" }}
       - run:
-          name: Create necessary directories
-          command: |
-            mkdir -p /home/circleci/cargo/src/github.com/bloXroute-Labs
-            mkdir -p target
-      - run:
           name: Update/install packages
           command: |
             sudo apt update
-            sudo apt install -y awscli protobuf-compiler
-            which protoc
-            protoc --version
-            echo "PROTOC=${PROTOC}"
+            sudo apt install -y awscli
       - run:
           name: Install Rust components
           command: |
@@ -40,10 +31,7 @@ jobs:
             rustup component add rustfmt
       - run:
           name: Update dependencies
-          command: |
-            cargo update
-            cargo clean
-            RUST_BACKTRACE=1 cargo build -v
+          command: cargo update
       - save_cache:
           key: v1-cargo-cache-{{ checksum "Cargo.lock" }}
           paths:
@@ -55,7 +43,6 @@ jobs:
             - src
             - registry
             - bin
-            - target
 
   unit:
     executor: bxrust
