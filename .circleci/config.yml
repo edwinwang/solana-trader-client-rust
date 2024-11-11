@@ -2,7 +2,7 @@ version: 2.1
 executors:
   bxrust:
     docker:
-      - image: cimg/rust:1.82.0
+      - image: cimg/rust:1.75
     environment:
       CARGO_HOME: /home/circleci/cargo
       WORKSPACE: /home/circleci/cargo/src/github.com/bloXroute-Labs/solana-trader-client-rust
@@ -23,7 +23,7 @@ jobs:
           name: Update/install packages
           command: |
             sudo apt update
-            sudo apt install awscli
+            sudo apt install -y awscli protobuf-compiler
       - run:
           name: Install Rust components
           command: |
