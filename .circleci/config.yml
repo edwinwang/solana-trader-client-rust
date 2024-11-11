@@ -2,7 +2,7 @@ version: 2.1
 executors:
   bxrust:
     docker:
-      - image: cimg/rust:1.75
+      - image: cimg/rust:1.82.0
     environment:
       CARGO_HOME: /home/circleci/cargo
       WORKSPACE: /home/circleci/cargo/src/github.com/bloXroute-Labs/solana-trader-client-rust
