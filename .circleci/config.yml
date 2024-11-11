@@ -7,6 +7,7 @@ executors:
       CARGO_HOME: /home/circleci/cargo
       WORKSPACE: /home/circleci/cargo/src/github.com/bloXroute-Labs/solana-trader-client-rust
       RUSTFLAGS: "-D warnings"
+      PROTOC_FLAGS: "--experimental_allow_proto3_optional"
     working_directory: /home/circleci/cargo/src/github.com/bloXroute-Labs/solana-trader-client-rust
 
 jobs:
