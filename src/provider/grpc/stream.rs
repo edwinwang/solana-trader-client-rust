@@ -170,4 +170,68 @@ impl GrpcClient {
 
         Ok(response.into_inner())
     }
+
+    pub async fn get_recent_block_hash_stream(
+        &mut self,
+    ) -> Result<Streaming<api::GetRecentBlockHashResponse>> {
+        let request = Request::new(api::GetRecentBlockHashRequest {});
+
+        let response = self
+            .client
+            .get_recent_block_hash_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetRecentBlockHashStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_pool_reserves_stream(
+        &mut self,
+        projects: Vec<api::Project>,
+        pools: Vec<String>,
+    ) -> Result<Streaming<api::GetPoolReservesStreamResponse>> {
+        let request = Request::new(api::GetPoolReservesStreamRequest {
+            projects: projects.iter().map(|&p| p as i32).collect(),
+            pools,
+        });
+
+        let response = self
+            .client
+            .get_pool_reserves_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetPoolReservesStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_priority_fee_stream(
+        &mut self,
+        project: api::Project,
+        percentile: Option<f64>,
+    ) -> Result<Streaming<api::GetPriorityFeeResponse>> {
+        let request = Request::new(api::GetPriorityFeeRequest {
+            project: project as i32,
+            percentile,
+        });
+
+        let response = self
+            .client
+            .get_priority_fee_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetPriorityFeeStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_bundle_tip_stream(&mut self) -> Result<Streaming<api::GetBundleTipResponse>> {
+        let request = Request::new(api::GetBundleTipRequest {});
+
+        let response = self
+            .client
+            .get_bundle_tip_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetBundleTipStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
 }

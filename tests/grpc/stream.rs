@@ -320,3 +320,115 @@ async fn test_new_raydium_pools_by_transaction_stream_grpc(
         }
     }
 }
+
+#[test_case(1 ; "single block hash")]
+#[tokio::test]
+#[ignore]
+async fn test_recent_block_hash_stream_grpc(expected_hashes: usize) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+    let mut stream = client.get_recent_block_hash_stream().await?;
+
+    println!("starting recent block hash stream");
+
+    for hash_num in 1..=expected_hashes {
+        let response = stream
+            .next()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))?
+            .map_err(|e| anyhow::anyhow!("Stream error: {}", e))?;
+
+        println!("Block hash {} received: {:#?}", hash_num, response);
+
+        // Optional: Add assertions based on the response
+        assert!(
+            !response.block_hash.is_empty(),
+            "Block hash should not be empty"
+        );
+    }
+
+    Ok(())
+}
+
+// Test implementations
+#[test_case(
+    vec![api::Project::PRaydium],
+    vec![
+        "HZ1znC9XBasm9AMDhGocd9EHSyH8Pyj1EUdiPb4WnZjo".to_string(),
+        "D8wAxwpH2aKaEGBKfeGdnQbCc2s54NrRvTDXCK98VAeT".to_string(),
+        "DdpuaJgjB2RptGMnfnCZVmC4vkKsMV6ytRa2gggQtCWt".to_string(),
+        "AVs9TA4nWDzfPJE9gGVNJMVhcQy3V9PGazuz33BfG2RA".to_string(),
+        "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2".to_string(),
+        "7XawhbbxtsRcQA8KTkHT9f9nc6d69UwqCDh6U5EEbEmX".to_string(),
+    ];
+    "Raydium pool reserves stream"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_pool_reserves_stream_grpc(
+    projects: Vec<api::Project>,
+    pools: Vec<String>,
+) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+    let mut stream = client.get_pool_reserves_stream(projects, pools).await?;
+
+    println!("starting pool reserves stream");
+
+    let response = stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))?
+        .map_err(|e| anyhow::anyhow!("Stream error: {}", e))?;
+
+    println!("Response received: {:#?}", response);
+
+    Ok(())
+}
+
+#[test_case(
+    api::Project::PRaydium,
+    None ;
+    "Raydium priority fee stream"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_priority_fee_stream_grpc(
+    project: api::Project,
+    percentile: Option<f64>,
+) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+    let mut stream = client.get_priority_fee_stream(project, percentile).await?;
+
+    println!("starting priority fee stream");
+
+    let response = stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))?
+        .map_err(|e| anyhow::anyhow!("Stream error: {}", e))?;
+
+    println!("Response received: {:#?}", response);
+
+    Ok(())
+}
+
+#[test_case(1 ; "single bundle tip")]
+#[tokio::test]
+#[ignore]
+async fn test_bundle_tip_stream_grpc(expected_responses: usize) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+    let mut stream = client.get_bundle_tip_stream().await?;
+
+    println!("starting bundle tip stream");
+
+    for response_num in 1..=expected_responses {
+        let response = stream
+            .next()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))?
+            .map_err(|e| anyhow::anyhow!("Stream error: {}", e))?;
+
+        println!("Bundle tip {} received: {:#?}", response_num, response);
+    }
+
+    Ok(())
+}

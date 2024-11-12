@@ -56,6 +56,46 @@ async fn test_raydium_swap_grpc(
 }
 
 #[test_case(
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+    "So11111111111111111111111111111111111111112",   // SOL
+    0.001,                                            // Amount
+    0.4;                                              // Slippage
+    "Raydium swap instructions USDC to SOL"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_raydium_swap_instructions_grpc(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    slippage: f64,
+) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let request = api::PostRaydiumSwapInstructionsRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Raydium swap instructions"))
+            .to_string(),
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
+        compute_limit: 300000,
+        compute_price: 2000,
+        tip: Some(2000001),
+    };
+
+    let signatures = client
+        .submit_raydium_swap_instructions(request, false)
+        .await?;
+
+    println!("Raydium swap instructions signatures: {:#?}", signatures);
+
+    Ok(())
+}
+
+#[test_case(
     "So11111111111111111111111111111111111111112",   // Input token (SOL)
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // Output token (USDC)
     0.01,                                             // Input amount
@@ -374,6 +414,46 @@ async fn test_jupiter_route_swap_grpc(
         .sign_and_submit(txs.to_vec(), true, false, false, false, false)
         .await;
     println!("Jupiter Route signature: {:#?}", s?);
+
+    Ok(())
+}
+
+#[test_case(
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+    "So11111111111111111111111111111111111111112",   // SOL
+    0.001,                                            // Amount
+    0.4;                                              // Slippage
+    "Jupiter swap instructions USDC to SOL"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_jupiter_swap_instructions_grpc(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    slippage: f64,
+) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let request = api::PostJupiterSwapInstructionsRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Jupiter swap instructions"))
+            .to_string(),
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
+        fast_mode: None,
+        compute_price: 10000,
+        tip: Some(10000),
+    };
+
+    let signatures = client
+        .submit_jupiter_swap_instructions(request, false)
+        .await?;
+
+    println!("Jupiter swap instructions signatures: {:#?}", signatures);
 
     Ok(())
 }

@@ -128,4 +128,52 @@ impl WebSocketClient {
             .stream_proto("GetNewRaydiumPoolsByTransactionStream", &request)
             .await
     }
+
+    pub async fn get_recent_block_hash_stream(
+        &self,
+    ) -> Result<impl Stream<Item = Result<api::GetRecentBlockHashResponse>>> {
+        let request = api::GetRecentBlockHashRequest {};
+
+        self.conn
+            .stream_proto("GetRecentBlockHashStream", &request)
+            .await
+    }
+
+    pub async fn get_pool_reserves_stream(
+        &self,
+        projects: Vec<api::Project>,
+        pools: Vec<String>,
+    ) -> Result<impl Stream<Item = Result<api::GetPoolReservesStreamResponse>>> {
+        let request = api::GetPoolReservesStreamRequest {
+            projects: projects.iter().map(|&p| p as i32).collect(),
+            pools,
+        };
+
+        self.conn
+            .stream_proto("GetPoolReservesStream", &request)
+            .await
+    }
+
+    pub async fn get_priority_fee_stream(
+        &self,
+        project: api::Project,
+        percentile: Option<f64>,
+    ) -> Result<impl Stream<Item = Result<api::GetPriorityFeeResponse>>> {
+        let request = api::GetPriorityFeeRequest {
+            project: project as i32,
+            percentile,
+        };
+
+        self.conn
+            .stream_proto("GetPriorityFeeStream", &request)
+            .await
+    }
+
+    pub async fn get_bundle_tip_stream(
+        &self,
+    ) -> Result<impl Stream<Item = Result<api::GetBundleTipResponse>>> {
+        let request = api::GetBundleTipRequest {};
+
+        self.conn.stream_proto("GetBundleTipStream", &request).await
+    }
 }

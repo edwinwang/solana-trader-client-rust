@@ -75,6 +75,8 @@ impl HTTPClient {
 
         let res = response.text().await?;
 
+        println!("{:?}", res);
+
         let mut value = serde_json::from_str(&res)
             .map_err(|e| anyhow::anyhow!("Failed to parse response as JSON: {}", e))?;
 
