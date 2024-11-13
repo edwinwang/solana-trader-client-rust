@@ -234,4 +234,33 @@ impl GrpcClient {
 
         Ok(response.into_inner())
     }
+
+    pub async fn get_pump_fun_new_tokens_stream(
+        &mut self,
+    ) -> Result<Streaming<api::GetPumpFunNewTokensStreamResponse>> {
+        let request = Request::new(api::GetPumpFunNewTokensStreamRequest {});
+
+        let response = self
+            .client
+            .get_pump_fun_new_tokens_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetPumpFunNewTokensStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_pump_fun_swaps_stream(
+        &mut self,
+        tokens: Vec<String>,
+    ) -> Result<Streaming<api::GetPumpFunSwapsStreamResponse>> {
+        let request = Request::new(api::GetPumpFunSwapsStreamRequest { tokens });
+
+        let response = self
+            .client
+            .get_pump_fun_swaps_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetPumpFunSwapsStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
 }

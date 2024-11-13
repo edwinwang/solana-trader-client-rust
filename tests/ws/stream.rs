@@ -325,3 +325,55 @@ async fn test_bundle_tip_stream_ws(expected_responses: usize) -> Result<()> {
     ws.close().await?;
     Ok(())
 }
+
+#[test_case(1 ; "single new token")]
+#[tokio::test]
+#[ignore]
+async fn test_pump_fun_new_tokens_stream_ws(expected_responses: usize) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+    let mut stream = ws.get_pump_fun_new_tokens_stream().await?;
+
+    let mut last_mint = String::new();
+    for response_num in 1..=expected_responses {
+        let response = stream
+            .next()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))??;
+
+        println!("New token {} received: {:#?}", response_num, response);
+        last_mint = response.mint.clone();
+        assert!(
+            !response.mint.is_empty(),
+            "Mint address should not be empty"
+        );
+    }
+
+    println!("Last mint received: {}", last_mint);
+    ws.close().await?;
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_pump_fun_tokens_and_swaps_integration_ws() -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+
+    let mut tokens_stream = ws.get_pump_fun_new_tokens_stream().await?;
+    let new_token = tokens_stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Tokens stream ended without data"))??;
+
+    println!("New token received: {}", new_token.mint);
+
+    let mut swaps_stream = ws.get_pump_fun_swaps_stream(vec![new_token.mint]).await?;
+    let swap = swaps_stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Swaps stream ended without data"))??;
+
+    println!("Swap received: {:#?}", swap);
+
+    ws.close().await?;
+    Ok(())
+}

@@ -168,7 +168,16 @@ pub fn convert_string_enums(value: &mut Value) {
                         }
                     }
 
-                    (k, Value::String(s)) if ["feeAtPercentile"].contains(&k) => {
+                    (k, Value::String(s))
+                        if [
+                            "feeAtPercentile",
+                            "solAmount",
+                            "tokenAmount",
+                            "virtualSolReserves",
+                            "virtualTokenReserves",
+                        ]
+                        .contains(&k) =>
+                    {
                         if let Ok(num) = s.parse::<u64>() {
                             *val = json!(num);
                         }

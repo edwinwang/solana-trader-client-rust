@@ -176,4 +176,25 @@ impl WebSocketClient {
 
         self.conn.stream_proto("GetBundleTipStream", &request).await
     }
+
+    pub async fn get_pump_fun_new_tokens_stream(
+        &self,
+    ) -> Result<impl Stream<Item = Result<api::GetPumpFunNewTokensStreamResponse>>> {
+        let request = api::GetPumpFunNewTokensStreamRequest {};
+
+        self.conn
+            .stream_proto("GetPumpFunNewTokensStream", &request)
+            .await
+    }
+
+    pub async fn get_pump_fun_swaps_stream(
+        &self,
+        tokens: Vec<String>,
+    ) -> Result<impl Stream<Item = Result<api::GetPumpFunSwapsStreamResponse>>> {
+        let request = api::GetPumpFunSwapsStreamRequest { tokens };
+
+        self.conn
+            .stream_proto("GetPumpFunSwapsStream", &request)
+            .await
+    }
 }
