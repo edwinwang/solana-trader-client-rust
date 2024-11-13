@@ -32,24 +32,6 @@ pub fn convert_string_enums(value: &mut Value) {
                         }
                     }
 
-                    // String to numeric conversions
-                    (k, Value::String(s))
-                        if [
-                            "tradeFeeRate",
-                            "height",
-                            "token1Reserves",
-                            "token2Reserves",
-                            "slot",
-                            "time",
-                            "openTime",
-                        ]
-                        .contains(&k) =>
-                    {
-                        if let Ok(num) = s.parse::<i64>() {
-                            *val = json!(num);
-                        }
-                    }
-
                     // Infinity enum conversion
                     ("infinity", Value::String(s)) => {
                         let mapped = match s.as_str() {
@@ -94,7 +76,6 @@ mod tests {
         convert_string_enums(&mut value);
 
         assert_eq!(value["project"], 2);
-        assert_eq!(value["tradeFeeRate"], 1000);
         assert_eq!(value["nested"]["project"], 3);
         assert_eq!(value["nested"]["priceImpactPercent"]["infinity"], 0);
         assert_eq!(value["array"][0]["project"], 5);
