@@ -241,3 +241,39 @@ async fn test_get_quotes_http(
 
     Ok(())
 }
+
+#[test_case(
+    vec![
+        "So11111111111111111111111111111111111111112".to_string(),
+        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263".to_string(),
+    ];
+    "SOL and BONK prices via HTTP"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_raydium_prices_http(tokens: Vec<String>) -> Result<()> {
+    let client = HTTPClient::new(None)?;
+
+    let response = client.get_raydium_prices(tokens).await?;
+    println!("Raydium prices response: {:#?}", response);
+
+    Ok(())
+}
+
+#[test_case(
+    vec![
+        "So11111111111111111111111111111111111111112".to_string(),  // SOL
+        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263".to_string(), // BONK
+    ];
+    "SOL and BONK prices"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_jupiter_prices_http(tokens: Vec<String>) -> Result<()> {
+    let client = HTTPClient::new(None)?;
+
+    let response = client.get_jupiter_prices(tokens).await?;
+    println!("Jupiter prices response: {:#?}", response);
+
+    Ok(())
+}

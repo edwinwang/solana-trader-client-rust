@@ -282,3 +282,41 @@ async fn test_get_quotes_ws(
     client.close().await?;
     Ok(())
 }
+
+#[test_case(
+    vec![
+        "So11111111111111111111111111111111111111112".to_string(),
+        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263".to_string(),
+    ];
+    "SOL and BONK prices via WebSocket"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_raydium_prices_ws(tokens: Vec<String>) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+
+    let response = ws.get_raydium_prices(tokens).await?;
+    println!("Raydium prices response: {:#?}", response);
+
+    ws.close().await?;
+    Ok(())
+}
+
+#[test_case(
+    vec![
+        "So11111111111111111111111111111111111111112".to_string(),  // SOL
+        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263".to_string(), // BONK
+    ];
+    "SOL and BONK prices via WebSocket"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_jupiter_prices_ws(tokens: Vec<String>) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+
+    let response = ws.get_jupiter_prices(tokens).await?;
+    println!("Jupiter prices response: {:#?}", response);
+
+    ws.close().await?;
+    Ok(())
+}
