@@ -105,7 +105,7 @@ impl WebSocketClient {
         let request = json!({
             "entries": entries,
             "useBundle": use_bundle,
-            "submitStrategy": 0
+            "submitStrategy": submit_opts.submit_strategy
         });
 
         let response: serde_json::Value = self.conn.request("PostSubmitBatchV2", request).await?;

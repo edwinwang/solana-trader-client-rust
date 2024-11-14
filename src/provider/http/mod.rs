@@ -150,7 +150,7 @@ impl HTTPClient {
         let request_json = json!({
             "entries": entries,
             "useBundle": use_bundle,
-            "submitStrategy": 0
+            "submitStrategy": submit_opts.submit_strategy
         });
 
         let response = self

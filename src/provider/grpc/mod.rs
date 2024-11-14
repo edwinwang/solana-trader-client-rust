@@ -148,7 +148,7 @@ impl GrpcClient {
         let batch_request = api::PostSubmitBatchRequest {
             entries,
             use_bundle: Some(use_bundle),
-            submit_strategy: 0,
+            submit_strategy: submit_opts.submit_strategy.into(),
             front_running_protection: Some(submit_opts.front_running_protection),
         };
 
