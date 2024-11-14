@@ -197,7 +197,6 @@ async fn test_raydium_cpmm_swap_http(
     Ok(())
 }
 
-
 #[test_case(
     "So11111111111111111111111111111111111111112",   // SOL
     "HDa3zJc12ahykSsBRvgiWzr6WLEByf36yzKKbVvy4gnF", // USDC

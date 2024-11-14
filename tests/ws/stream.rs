@@ -4,7 +4,6 @@ use solana_trader_client_rust::{common::constants::WRAPPED_SOL, provider::ws::We
 use solana_trader_proto::api;
 use test_case::test_case;
 
-// TODO: Error: Failed to parse stream value: invalid type: string "P_RAYDIUM", expected i32
 #[test_case(
     vec![api::Project::PRaydium],
     vec![WRAPPED_SOL.to_string()] ;
