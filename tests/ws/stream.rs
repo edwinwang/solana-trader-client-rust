@@ -4,6 +4,7 @@ use solana_trader_client_rust::{common::constants::WRAPPED_SOL, provider::ws::We
 use solana_trader_proto::api;
 use test_case::test_case;
 
+// TODO: Error: Failed to parse stream value: invalid type: string "P_RAYDIUM", expected i32
 #[test_case(
     vec![api::Project::PRaydium],
     vec![WRAPPED_SOL.to_string()] ;
@@ -191,7 +192,8 @@ async fn test_swaps_stream_ws(
     Ok(())
 }
 
-// TODO: currently blocked until https://bloxroute.atlassian.net/browse/TRAD-1185
+// TODO
+// Error: RPC error: {"code":-32602,"data":"proto: (line 1:2): unknown field \"includeCpmm\"","message":"Invalid params"}
 #[test_case(false ; "without cpmm")]
 #[tokio::test]
 #[ignore]

@@ -226,6 +226,8 @@ async fn test_jupiter_quotes_ws(
     Ok(())
 }
 
+// TODO:
+// Error: Error: Failed to parse result: invalid type: string "P_JUPITER", expected i32
 #[test_case(
     "So11111111111111111111111111111111111111112",
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",

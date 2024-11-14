@@ -92,7 +92,7 @@ impl HTTPClient {
         self.sign_and_submit(
             vec![tx_message],
             false, // skip_pre_flight
-            true,  // front_running_protection
+            false,  // front_running_protection
             true,  // use_staked_rpcs
             false, // fast_best_effort
             use_bundle,

@@ -134,38 +134,38 @@ pub fn create_transaction_message(
 
 pub fn convert_string_enums(value: &mut Value) {
     match value {
-        Value::Object(map) => {
-            for (key, val) in map {
-                match (key.as_str(), &val) {
-                    ("data", Value::String(s)) => {
-                        if let Ok(bytes) = general_purpose::STANDARD.decode(s) {
-                            *val = json!(bytes);
-                        }
-                    }
-                    // Project enum conversion
-                    ("project", Value::String(s)) => {
-                        if let Some(project_enum) = Project::from_str_name(s) {
-                            *val = json!(project_enum as i32);
-                        }
-                    }
+        // Value::Object(map) => {
+        //     for (key, val) in map {
+        //         match (key.as_str(), &val) {
+        //             ("data", Value::String(s)) => {
+        //                 if let Ok(bytes) = general_purpose::STANDARD.decode(s) {
+        //                     *val = json!(bytes);
+        //                 }
+        //             }
+        //             // Project enum conversion
+        //             ("project", Value::String(s)) => {
+        //                 if let Some(project_enum) = Project::from_str_name(s) {
+        //                     *val = json!(project_enum as i32);
+        //                 }
+        //             }
 
-                    // Infinity enum conversion
-                    ("infinity", Value::String(s)) => {
-                        let mapped = match s.as_str() {
-                            "INF_NOT" => 0,
-                            "INF" => 1,
-                            "INF_NEG" => 2,
-                            _ => return,
-                        };
-                        *val = json!(mapped);
-                    }
+        //             // Infinity enum conversion
+        //             ("infinity", Value::String(s)) => {
+        //                 let mapped = match s.as_str() {
+        //                     "INF_NOT" => 0,
+        //                     "INF" => 1,
+        //                     "INF_NEG" => 2,
+        //                     _ => return,
+        //                 };
+        //                 *val = json!(mapped);
+        //             }
 
-                    // Recurse for nested structures
-                    _ => convert_string_enums(val),
-                }
-            }
-        }
-        Value::Array(arr) => arr.iter_mut().for_each(convert_string_enums),
+        //             // Recurse for nested structures
+        //             _ => convert_string_enums(val),
+        //         }
+        //     }
+        // }
+        // Value::Array(arr) => arr.iter_mut().for_each(convert_string_enums),
         _ => {}
     }
 }

@@ -110,8 +110,6 @@ async fn test_raydium_route_swap_http(
     Ok(())
 }
 
-// TODO: fix programId -> programID field
-// Error: Failed to parse result: missing field `programId`
 #[test_case(
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",  // USDC
     "So11111111111111111111111111111111111111112",   // SOL
@@ -198,6 +196,7 @@ async fn test_raydium_cpmm_swap_http(
 
     Ok(())
 }
+
 
 #[test_case(
     "So11111111111111111111111111111111111111112",   // SOL
@@ -416,8 +415,6 @@ async fn test_jupiter_route_swap_http(
     Ok(())
 }
 
-// TODO: fix programId -> programID field
-// Error: Failed to parse result: missing field `programId`
 #[test_case(
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
     "So11111111111111111111111111111111111111112",   // SOL
