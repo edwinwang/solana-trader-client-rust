@@ -191,7 +191,8 @@ async fn test_swaps_stream_ws(
     Ok(())
 }
 
-// TODO: currently blocked until https://bloxroute.atlassian.net/browse/TRAD-1185
+// TODO
+// Error: RPC error: {"code":-32602,"data":"proto: (line 1:2): unknown field \"includeCpmm\"","message":"Invalid params"}
 #[test_case(false ; "without cpmm")]
 #[tokio::test]
 #[ignore]
@@ -223,6 +224,156 @@ async fn test_new_raydium_pools_by_transaction_stream_ws(expected_responses: usi
             .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))??;
         println!("Response {} received: {:#?}", i, response);
     }
+
+    ws.close().await?;
+    Ok(())
+}
+
+#[test_case(1 ; "single block hash")]
+#[tokio::test]
+#[ignore]
+async fn test_recent_block_hash_stream_ws(expected_hashes: usize) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+    let mut stream = ws.get_recent_block_hash_stream().await?;
+
+    for hash_num in 1..=expected_hashes {
+        let response = stream
+            .next()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))??;
+
+        println!("Block hash {} received: {:#?}", hash_num, response);
+        assert!(
+            !response.block_hash.is_empty(),
+            "Block hash should not be empty"
+        );
+    }
+
+    ws.close().await?;
+    Ok(())
+}
+
+#[test_case(
+    vec![api::Project::PRaydium],
+    vec![
+        "HZ1znC9XBasm9AMDhGocd9EHSyH8Pyj1EUdiPb4WnZjo".to_string(),
+        "D8wAxwpH2aKaEGBKfeGdnQbCc2s54NrRvTDXCK98VAeT".to_string(),
+        "DdpuaJgjB2RptGMnfnCZVmC4vkKsMV6ytRa2gggQtCWt".to_string(),
+        "AVs9TA4nWDzfPJE9gGVNJMVhcQy3V9PGazuz33BfG2RA".to_string(),
+        "58oQChx4yWmvKdwLLZzBi4ChoCc2fqCUWBkwMihLYQo2".to_string(),
+        "7XawhbbxtsRcQA8KTkHT9f9nc6d69UwqCDh6U5EEbEmX".to_string(),
+    ];
+    "Raydium pool reserves stream"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_pool_reserves_stream_ws(
+    projects: Vec<api::Project>,
+    pools: Vec<String>,
+) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+    let mut stream = ws.get_pool_reserves_stream(projects, pools).await?;
+
+    let response = stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))??;
+
+    println!("Response received: {:#?}", response);
+
+    ws.close().await?;
+    Ok(())
+}
+
+#[test_case(
+    api::Project::PRaydium,
+    None ;
+    "Raydium priority fee stream"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_priority_fee_stream_ws(project: api::Project, percentile: Option<f64>) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+    let mut stream = ws.get_priority_fee_stream(project, percentile).await?;
+
+    let response = stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))??;
+
+    println!("Response received: {:#?}", response);
+
+    ws.close().await?;
+    Ok(())
+}
+
+#[test_case(1 ; "single bundle tip")]
+#[tokio::test]
+#[ignore]
+async fn test_bundle_tip_stream_ws(expected_responses: usize) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+    let mut stream = ws.get_bundle_tip_stream().await?;
+
+    for response_num in 1..=expected_responses {
+        let response = stream
+            .next()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))??;
+
+        println!("Bundle tip {} received: {:#?}", response_num, response);
+    }
+
+    ws.close().await?;
+    Ok(())
+}
+
+#[test_case(1 ; "single new token")]
+#[tokio::test]
+#[ignore]
+async fn test_pump_fun_new_tokens_stream_ws(expected_responses: usize) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+    let mut stream = ws.get_pump_fun_new_tokens_stream().await?;
+
+    let mut last_mint = String::new();
+    for response_num in 1..=expected_responses {
+        let response = stream
+            .next()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))??;
+
+        println!("New token {} received: {:#?}", response_num, response);
+        last_mint = response.mint.clone();
+        assert!(
+            !response.mint.is_empty(),
+            "Mint address should not be empty"
+        );
+    }
+
+    println!("Last mint received: {}", last_mint);
+    ws.close().await?;
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_pump_fun_tokens_and_swaps_integration_ws() -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+
+    let mut tokens_stream = ws.get_pump_fun_new_tokens_stream().await?;
+    let new_token = tokens_stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Tokens stream ended without data"))??;
+
+    println!("New token received: {}", new_token.mint);
+
+    let mut swaps_stream = ws.get_pump_fun_swaps_stream(vec![new_token.mint]).await?;
+    let swap = swaps_stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Swaps stream ended without data"))??;
+
+    println!("Swap received: {:#?}", swap);
 
     ws.close().await?;
     Ok(())

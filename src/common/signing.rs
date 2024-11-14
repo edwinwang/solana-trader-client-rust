@@ -8,6 +8,7 @@ use solana_sdk::{
     signer::Signer,
     transaction::{Transaction, VersionedTransaction},
 };
+use solana_trader_proto::api;
 
 use crate::provider::utils::IntoTransactionMessage;
 
@@ -17,15 +18,17 @@ pub struct SubmitParams {
     pub front_running_protection: bool,
     pub use_staked_rpcs: bool,
     pub fast_best_effort: bool,
+    pub submit_strategy: api::SubmitStrategy
 }
 
 impl Default for SubmitParams {
     fn default() -> Self {
         Self {
-            skip_pre_flight: false,
-            front_running_protection: true,
+            skip_pre_flight: true,
+            front_running_protection: false,
             use_staked_rpcs: true,
             fast_best_effort: false,
+            submit_strategy: api::SubmitStrategy::PSubmitAll
         }
     }
 }
@@ -41,7 +44,6 @@ pub async fn sign_transaction<T: IntoTransactionMessage + Clone>(
     keypair: &Keypair,
     blockhash: String,
 ) -> Result<SignedTransaction> {
-    // Convert to TransactionMessage using existing trait
     let tx_message = tx.clone().into_transaction_message();
 
     let rawbytes = general_purpose::STANDARD.decode(&tx_message.content)?;

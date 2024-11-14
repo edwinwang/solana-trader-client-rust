@@ -8,7 +8,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::GetRecentBlockHashResponseV2;
 
-use crate::common::signing::{get_keypair, sign_transaction};
+use crate::common::signing::{get_keypair, sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, ws_endpoint, BaseConfig};
 use crate::connections::ws::WS;
 
@@ -56,10 +56,7 @@ impl WebSocketClient {
     pub async fn sign_and_submit<T: IntoTransactionMessage + Clone>(
         &self,
         txs: Vec<T>,
-        skip_pre_flight: bool,
-        front_running_protection: bool,
-        use_staked_rpcs: bool,
-        fast_best_effort: bool,
+        submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
         let keypair = get_keypair(&self.keypair)?;
@@ -67,7 +64,6 @@ impl WebSocketClient {
         let hash_res: GetRecentBlockHashResponseV2 =
             self.conn.request("GetRecentBlockHashV2", json!({})).await?;
 
-        // Handle single transaction case
         if txs.len() == 1 {
             let signed_tx = sign_transaction(&txs[0], keypair, hash_res.block_hash).await?;
 
@@ -76,10 +72,10 @@ impl WebSocketClient {
                     "content": signed_tx.content,
                     "isCleanup": signed_tx.is_cleanup
                 },
-                "skipPreFlight": skip_pre_flight,
-                "frontRunningProtection": front_running_protection,
-                "useStakedRPCs": use_staked_rpcs,
-                "fastBestEffort": fast_best_effort
+                "skipPreFlight": submit_opts.skip_pre_flight,
+                "frontRunningProtection": submit_opts.front_running_protection,
+                "useStakedRPCs": submit_opts.use_staked_rpcs,
+                "fastBestEffort": submit_opts.fast_best_effort
             });
 
             let response: serde_json::Value = self.conn.request("PostSubmitV2", request).await?;
@@ -91,7 +87,6 @@ impl WebSocketClient {
                 .ok_or_else(|| anyhow!("Missing signature in response"))?]);
         }
 
-        // Handle batch case
         let mut entries = Vec::with_capacity(txs.len());
         for tx in txs {
             let signed_tx = sign_transaction(&tx, keypair, hash_res.block_hash.clone()).await?;
@@ -100,22 +95,21 @@ impl WebSocketClient {
                     "content": signed_tx.content,
                     "isCleanup": signed_tx.is_cleanup
                 },
-                "skipPreFlight": skip_pre_flight,
-                "frontRunningProtection": front_running_protection,
-                "useStakedRPCs": use_staked_rpcs,
-                "fastBestEffort": fast_best_effort
+                "skipPreFlight": submit_opts.skip_pre_flight,
+                "frontRunningProtection": submit_opts.front_running_protection,
+                "useStakedRPCs": submit_opts.use_staked_rpcs,
+                "fastBestEffort": submit_opts.fast_best_effort
             }));
         }
 
         let request = json!({
             "entries": entries,
             "useBundle": use_bundle,
-            "submitStrategy": 0
+            "submitStrategy": submit_opts.submit_strategy
         });
 
         let response: serde_json::Value = self.conn.request("PostSubmitBatchV2", request).await?;
 
-        // Extract signatures from successful transactions
         let signatures = response["transactions"]
             .as_array()
             .ok_or_else(|| anyhow!("Invalid response format"))?
