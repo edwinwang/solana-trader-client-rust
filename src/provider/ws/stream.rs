@@ -110,10 +110,6 @@ impl WebSocketClient {
             include_cpmm: Some(include_cpmm),
         };
 
-        // let request = json!({
-        //     "includeCPMM": include_cpmm
-        // })
-
         self.conn
             .stream_proto("GetNewRaydiumPoolsStream", &request)
             .await

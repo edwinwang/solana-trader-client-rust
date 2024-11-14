@@ -1,7 +1,10 @@
 use anyhow::Result;
 use dotenv::dotenv;
 use solana_trader_client_rust::{
-    common::constants::{USDC, WRAPPED_SOL},
+    common::{
+        constants::{USDC, WRAPPED_SOL},
+        signing::SubmitParams,
+    },
     provider::grpc::GrpcClient,
 };
 use solana_trader_proto::api;
@@ -47,8 +50,9 @@ async fn test_raydium_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("rayidum signature : {:#?}", s?);
 
@@ -86,8 +90,9 @@ async fn test_raydium_swap_instructions_grpc(
         tip: Some(2000001),
     };
 
+    let submit_opts = SubmitParams::default();
     let signatures = client
-        .submit_raydium_swap_instructions(request, false)
+        .submit_raydium_swap_instructions(request, submit_opts, false)
         .await?;
 
     println!("Raydium swap instructions signatures: {:#?}", signatures);
@@ -146,8 +151,9 @@ async fn test_raydium_route_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium Route signature: {:#?}", s?);
 
@@ -193,8 +199,9 @@ async fn test_raydium_cpmm_swap_grpc(
     );
 
     let txs = response.transaction.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium CPMM signature: {:#?}", s?);
 
@@ -239,8 +246,9 @@ async fn test_raydium_clmm_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium CLMM signature: {:#?}", s?);
 
@@ -298,8 +306,9 @@ async fn test_raydium_clmm_route_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium CLMM Route signature: {:#?}", s?);
 
@@ -345,8 +354,10 @@ async fn test_jupiter_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Jupiter signature: {:#?}", s?);
 
@@ -410,8 +421,9 @@ async fn test_jupiter_route_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Jupiter Route signature: {:#?}", s?);
 
@@ -449,8 +461,9 @@ async fn test_jupiter_swap_instructions_grpc(
         tip: Some(10000),
     };
 
+    let submit_opts = SubmitParams::default();
     let signatures = client
-        .submit_jupiter_swap_instructions(request, false)
+        .submit_jupiter_swap_instructions(request, submit_opts, false)
         .await?;
 
     println!("Jupiter swap instructions signatures: {:#?}", signatures);
@@ -504,8 +517,9 @@ async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
     );
 
     let txs = response.transaction.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("signature : {:#?}", s?);
     Ok(())

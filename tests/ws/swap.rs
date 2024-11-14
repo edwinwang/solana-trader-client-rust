@@ -1,6 +1,9 @@
 use anyhow::Result;
 use solana_trader_client_rust::{
-    common::{constants::USDC, constants::WRAPPED_SOL},
+    common::{
+        constants::{USDC, WRAPPED_SOL},
+        signing::SubmitParams,
+    },
     provider::ws::WebSocketClient,
 };
 use solana_trader_proto::{api, common::Fee};
@@ -49,8 +52,9 @@ async fn test_raydium_swap_ws(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -109,8 +113,9 @@ async fn test_raydium_route_swap_ws(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -149,8 +154,9 @@ async fn test_raydium_swap_instructions_ws(
         tip: Some(2000001),
     };
 
+    let submit_opts = SubmitParams::default();
     let signatures = client
-        .submit_raydium_swap_instructions(request, false)
+        .submit_raydium_swap_instructions(request, submit_opts, false)
         .await?;
 
     println!("Raydium swap instructions signatures: {:#?}", signatures);
@@ -198,8 +204,9 @@ async fn test_raydium_cpmm_swap_ws(
     );
 
     let txs = response.transaction.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -245,8 +252,9 @@ async fn test_raydium_clmm_swap_ws(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -305,8 +313,9 @@ async fn test_raydium_clmm_route_swap_ws(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -356,8 +365,9 @@ async fn test_jupiter_swap_ws(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -422,8 +432,9 @@ async fn test_jupiter_route_swap_ws(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -462,8 +473,9 @@ async fn test_jupiter_swap_instructions_ws(
         fast_mode: None,
     };
 
+    let submit_opts = SubmitParams::default();
     let signatures = client
-        .submit_jupiter_swap_instructions(request, false)
+        .submit_jupiter_swap_instructions(request, submit_opts, false)
         .await?;
 
     println!("Jupiter swap instructions signatures: {:#?}", signatures);

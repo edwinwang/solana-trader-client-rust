@@ -41,7 +41,6 @@ pub async fn sign_transaction<T: IntoTransactionMessage + Clone>(
     keypair: &Keypair,
     blockhash: String,
 ) -> Result<SignedTransaction> {
-    // Convert to TransactionMessage using existing trait
     let tx_message = tx.clone().into_transaction_message();
 
     let rawbytes = general_purpose::STANDARD.decode(&tx_message.content)?;

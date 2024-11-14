@@ -8,7 +8,7 @@ use solana_sdk::{
 use solana_trader_proto::api;
 
 use crate::{
-    common::signing::get_keypair,
+    common::signing::{get_keypair, SubmitParams},
     provider::utils::{
         convert_address_lookup_table, convert_jupiter_instructions, convert_raydium_instructions,
         create_transaction_message,
@@ -75,31 +75,20 @@ impl WebSocketClient {
     pub async fn submit_raydium_swap_instructions(
         &self,
         request: api::PostRaydiumSwapInstructionsRequest,
+        submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
-        // Get the swap instructions
         let swap_instructions = self.post_raydium_swap_instructions(&request).await?;
 
-        // Convert instructions to Solana format
         let instructions = convert_raydium_instructions(&swap_instructions.instructions)?;
 
-        // Get recent blockhash
         let hash_res: api::GetRecentBlockHashResponseV2 =
             self.conn.request("GetRecentBlockHashV2", json!({})).await?;
 
-        // Create transaction message
         let tx_message = create_transaction_message(instructions, &hash_res.block_hash)?;
 
-        // Sign and submit using existing WebSocketClient implementation
-        self.sign_and_submit(
-            vec![tx_message],
-            false, // skip_pre_flight
-            false, // front_running_protection
-            true,  // use_staked_rpcs
-            false, // fast_best_effort
-            use_bundle,
-        )
-        .await
+        self.sign_and_submit(vec![tx_message], submit_opts, use_bundle)
+            .await
     }
 
     pub async fn post_raydium_cpmm_swap(
@@ -209,25 +198,21 @@ impl WebSocketClient {
     pub async fn submit_jupiter_swap_instructions(
         &self,
         request: api::PostJupiterSwapInstructionsRequest,
+        submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
         let keypair = get_keypair(&self.keypair)?;
 
-        // Get the swap instructions
         let swap_instructions = self.post_jupiter_swap_instructions(&request).await?;
 
-        // Convert address lookup tables
         let address_lookup_tables =
             convert_address_lookup_table(&swap_instructions.address_lookup_table_addresses)?;
 
-        // Convert instructions to Solana format
         let instructions = convert_jupiter_instructions(&swap_instructions.instructions)?;
 
-        // Get recent blockhash
         let hash_res: api::GetRecentBlockHashResponseV2 =
             self.conn.request("GetRecentBlockHashV2", json!({})).await?;
 
-        // Create versioned transaction
         let message = VersionedMessage::V0(v0::Message::try_compile(
             &self.public_key.unwrap(),
             &instructions,
@@ -237,22 +222,13 @@ impl WebSocketClient {
 
         let tx = VersionedTransaction::try_new(message, &[keypair])?;
 
-        // Convert to transaction message
         let tx_message = api::TransactionMessage {
             content: general_purpose::STANDARD.encode(bincode::serialize(&tx)?),
             is_cleanup: false,
         };
 
-        // Sign and submit
-        self.sign_and_submit(
-            vec![tx_message],
-            false, // skip_pre_flight
-            false, // front_running_protection
-            true,  // use_staked_rpcs
-            false, // fast_best_effort
-            use_bundle,
-        )
-        .await
+        self.sign_and_submit(vec![tx_message], submit_opts, use_bundle)
+            .await
     }
 
     pub async fn post_trade_swap(

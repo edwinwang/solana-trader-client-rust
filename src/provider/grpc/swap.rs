@@ -7,9 +7,12 @@ use solana_sdk::{
 use solana_trader_proto::api;
 use tonic::Request;
 
-use crate::provider::utils::{
-    convert_address_lookup_table, convert_jupiter_instructions, convert_raydium_instructions,
-    create_transaction_message,
+use crate::{
+    common::signing::SubmitParams,
+    provider::utils::{
+        convert_address_lookup_table, convert_jupiter_instructions, convert_raydium_instructions,
+        create_transaction_message,
+    },
 };
 
 use super::GrpcClient;
@@ -55,15 +58,13 @@ impl GrpcClient {
     pub async fn submit_raydium_swap_instructions(
         &mut self,
         request: api::PostRaydiumSwapInstructionsRequest,
+        submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
-        // Get the swap instructions from the API
         let swap_instructions = self.post_raydium_swap_instructions(&request).await?;
 
-        // Convert instructions to Solana format
         let instructions = convert_raydium_instructions(&swap_instructions.instructions)?;
 
-        // Get recent blockhash
         let block_hash = self
             .client
             .get_recent_block_hash_v2(api::GetRecentBlockHashRequestV2 { offset: 0 })
@@ -71,19 +72,10 @@ impl GrpcClient {
             .into_inner()
             .block_hash;
 
-        // Create transaction message
         let tx_message = create_transaction_message(instructions, &block_hash)?;
 
-        // Sign and submit the transaction
-        self.sign_and_submit(
-            vec![tx_message],
-            false, // skip_pre_flight
-            false, // front_running_protection
-            true,  // use_staked_rpcs
-            false, // fast_best_effort
-            use_bundle,
-        )
-        .await
+        self.sign_and_submit(vec![tx_message], submit_opts, use_bundle)
+            .await
     }
 
     pub async fn post_raydium_cpmm_swap(
@@ -165,6 +157,7 @@ impl GrpcClient {
     pub async fn submit_jupiter_swap_instructions(
         &mut self,
         request: api::PostJupiterSwapInstructionsRequest,
+        submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
         let swap_instructions = self.post_jupiter_swap_instructions(&request).await?;
@@ -196,16 +189,8 @@ impl GrpcClient {
             is_cleanup: false,
         };
 
-        // Sign and submit
-        self.sign_and_submit(
-            vec![tx_message],
-            false, // skip_pre_flight
-            false, // front_running_protection
-            true,  // use_staked_rpcs
-            false, // fast_best_effort
-            use_bundle,
-        )
-        .await
+        self.sign_and_submit(vec![tx_message], submit_opts, use_bundle)
+            .await
     }
 
     pub async fn post_pump_swap(

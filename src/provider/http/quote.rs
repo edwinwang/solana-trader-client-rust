@@ -159,7 +159,6 @@ impl HTTPClient {
         &self,
         tokens: Vec<String>,
     ) -> Result<api::GetJupiterPricesResponse> {
-        // Build query string
         let mut url = format!("{}/api/v2/jupiter/prices?", self.base_url);
         for (i, token) in tokens.iter().enumerate() {
             if i > 0 {
