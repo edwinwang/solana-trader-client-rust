@@ -82,3 +82,5 @@ Using the `test_case` crate tests are parametrized:
 // new test case
 #[test_case("BTC", "USDC", 0.1, 10 ; "BTC to USDC with 10% slippage")]
 ```
+
+run `cargo clippy --tests` after adding your tests, to resolve any potential issues 
