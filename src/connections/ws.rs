@@ -8,14 +8,16 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::{any::Any, time::Duration};
+use std::time::Duration;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::{broadcast, mpsc, Mutex};
 use tokio::time::timeout;
 use tokio_rustls::rustls::{ClientConfig, RootCertStore};
+use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::Stream;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+use tokio_tungstenite::tungstenite::handshake::client::Request;
 use tokio_tungstenite::tungstenite::protocol::WebSocketConfig;
 use tokio_tungstenite::{connect_async_tls_with_config, Connector};
 use tokio_tungstenite::{tungstenite::protocol::Message, WebSocketStream};
@@ -29,34 +31,9 @@ const CONNECTION_RETRY_INTERVAL: Duration = Duration::from_millis(100);
 const SUBSCRIPTION_BUFFER: usize = 1000;
 const PING_INTERVAL: Duration = Duration::from_secs(30);
 
-pub struct SubscriptionEntry<T> {
-    pub active: bool,
-    pub sender: mpsc::Sender<T>,
-}
-
-pub trait AnySubscription: Send + Sync {
-    fn is_active(&self) -> bool;
-    fn set_active(&mut self, active: bool);
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-}
-
-impl<T: Clone + Send + Sync + 'static> AnySubscription for SubscriptionEntry<T> {
-    fn is_active(&self) -> bool {
-        self.active
-    }
-
-    fn set_active(&mut self, active: bool) {
-        self.active = active;
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
+#[derive(Debug)]
+pub struct Subscription {
+    sender: mpsc::Sender<Value>,
 }
 
 #[derive(Clone)]
@@ -74,7 +51,7 @@ pub struct WS {
     shutdown_tx: broadcast::Sender<()>,
     request_id: AtomicU64,
     request_map: Arc<Mutex<HashMap<u64, RequestTracker>>>,
-    subscriptions: Arc<Mutex<HashMap<String, Box<dyn AnySubscription + Send + Sync>>>>,
+    subscriptions: Arc<Mutex<HashMap<String, Subscription>>>,
 }
 
 impl WS {
@@ -113,34 +90,7 @@ impl WS {
         url: &Url,
         auth_header: &str,
     ) -> Result<WebSocketStream<tokio_tungstenite::MaybeTlsStream<TcpStream>>> {
-        let mut request = url
-            .as_str()
-            .into_client_request()
-            .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;
-
-        let headers = request.headers_mut();
-        headers.insert("Authorization", auth_header.parse()?);
-        headers.insert("x-sdk", "rust-client".parse()?);
-        headers.insert("x-sdk-version", env!("CARGO_PKG_VERSION").parse()?);
-        headers.insert("Connection", "Upgrade".parse()?);
-        headers.insert("Upgrade", "websocket".parse()?);
-        headers.insert("Sec-WebSocket-Version", "13".parse()?);
-
-        if CryptoProvider::get_default().is_none() {
-            default_provider()
-                .install_default()
-                .map_err(|e| anyhow::anyhow!("Failed to install crypto provider: {:?}", e))?;
-        }
-        
-        let root_store = RootCertStore {
-            roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
-        };
-
-        let tls_config = ClientConfig::builder()
-            .with_root_certificates(root_store)
-            .with_no_client_auth();
-
-        let connector = Arc::new(tls_config);
+        let request = Self::build_request(url, auth_header)?;
 
         let mut retry_count = 0;
         let max_retries =
@@ -151,7 +101,7 @@ impl WS {
                 request.clone(),
                 Some(WebSocketConfig::default()),
                 true,
-                Some(Connector::Rustls(connector.clone())),
+                Some(Connector::Rustls(Self::setup_tls()?)),
             )
             .await
             {
@@ -172,6 +122,41 @@ impl WS {
                 }
             }
         }
+    }
+
+    fn build_request(url: &Url, auth_header: &str) -> Result<Request> {
+        let mut request = url
+            .as_str()
+            .into_client_request()
+            .map_err(|e| anyhow::anyhow!("Failed to build request: {}", e))?;
+
+        let headers = request.headers_mut();
+        headers.insert("Authorization", auth_header.parse()?);
+        headers.insert("x-sdk", "rust-client".parse()?);
+        headers.insert("x-sdk-version", env!("CARGO_PKG_VERSION").parse()?);
+        headers.insert("Connection", "Upgrade".parse()?);
+        headers.insert("Upgrade", "websocket".parse()?);
+        headers.insert("Sec-WebSocket-Version", "13".parse()?);
+
+        Ok(request)
+    }
+
+    fn setup_tls() -> Result<Arc<ClientConfig>> {
+        if CryptoProvider::get_default().is_none() {
+            default_provider()
+                .install_default()
+                .map_err(|e| anyhow::anyhow!("Failed to install crypto provider: {:?}", e))?;
+        }
+
+        let root_store = RootCertStore {
+            roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+        };
+
+        let tls_config = ClientConfig::builder()
+            .with_root_certificates(root_store)
+            .with_no_client_auth();
+
+        Ok(Arc::new(tls_config))
     }
 
     fn start_loops(
@@ -249,33 +234,22 @@ impl WS {
     {
         let (tx, rx) = mpsc::channel(SUBSCRIPTION_BUFFER);
 
-        let params = serde_json::to_value(request)
-            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
-
+        let params = serde_json::to_value(request)?;
         let params_array = json!([method, params]);
         let subscription_id: String = self.request("subscribe", params_array).await?;
 
         {
             let mut subs = self.subscriptions.lock().await;
-            subs.insert(
-                subscription_id,
-                Box::new(SubscriptionEntry {
-                    active: true,
-                    sender: tx,
-                }),
-            );
+            subs.insert(subscription_id, Subscription { sender: tx });
         }
 
-        Ok(
-            tokio_stream::wrappers::ReceiverStream::new(rx).map(|value: Value| {
-                let mut modified_value = value;
-                println!("{:#?}", modified_value);
-                convert_string_enums(&mut modified_value);
+        Ok(ReceiverStream::new(rx).map(|value: Value| {
+            let mut modified_value = value;
+            convert_string_enums(&mut modified_value);
 
-                serde_json::from_value(modified_value)
-                    .map_err(|e| anyhow::anyhow!("Failed to parse stream value: {}", e))
-            }),
-        )
+            serde_json::from_value(modified_value)
+                .map_err(|e| anyhow::anyhow!("Failed to parse stream value: {}", e))
+        }))
     }
 
     pub async fn close(self) -> Result<()> {
@@ -321,26 +295,22 @@ async fn write_loop(
 async fn read_loop(
     stream: Arc<Mutex<WebSocketStream<tokio_tungstenite::MaybeTlsStream<TcpStream>>>>,
     request_map: Arc<Mutex<HashMap<u64, RequestTracker>>>,
-    subscriptions: Arc<Mutex<HashMap<String, Box<dyn AnySubscription + Send + Sync>>>>,
+    subscriptions: Arc<Mutex<HashMap<String, Subscription>>>,
 ) {
     loop {
         let mut stream = stream.lock().await;
-        match timeout(Duration::from_millis(100), stream.next()).await {
-            Ok(Some(Ok(Message::Text(text)))) => match serde_json::from_str(&text) {
-                Ok(value) => {
+        let Ok(Some(Ok(msg))) = timeout(Duration::from_millis(100), stream.next()).await else {
+            continue;
+        };
+
+        match msg {
+            Message::Text(text) => {
+                if let Ok(value) = serde_json::from_str(&text) {
                     handle_message(&value, &request_map, &subscriptions, &text).await;
                 }
-                Err(e) => {
-                    eprintln!("Failed to parse message as JSON: {}", e);
-                }
-            },
-            Ok(Some(Ok(Message::Close(_)))) => break,
-            Ok(Some(Err(e))) => {
-                eprintln!("WebSocket error: {}", e);
-                break;
             }
-            Ok(None) => break,
-            _ => continue,
+            Message::Close(_) => break,
+            _ => (),
         }
     }
 }
@@ -367,49 +337,41 @@ async fn ping_loop(
 async fn handle_message(
     value: &Value,
     request_map: &Arc<Mutex<HashMap<u64, RequestTracker>>>,
-    subscriptions: &Arc<Mutex<HashMap<String, Box<dyn AnySubscription + Send + Sync>>>>,
+    subscriptions: &Arc<Mutex<HashMap<String, Subscription>>>,
     text: &str,
 ) {
-    if let Some(id) = value.get("id").and_then(|id| id.as_u64()) {
-        let request_map = request_map.lock().await;
-        if let Some(tracker) = request_map.get(&id) {
-            let _ = tracker
-                .ch
-                .send(ResponseUpdate {
-                    response: text.to_string(),
-                })
-                .await;
+    match value.get("id").and_then(|id| id.as_u64()) {
+        Some(id) => {
+            if let Some(tracker) = request_map.lock().await.get(&id) {
+                let _ = tracker
+                    .ch
+                    .send(ResponseUpdate {
+                        response: text.to_string(),
+                    })
+                    .await;
+            }
         }
-        return;
+        None => handle_subscription(value, subscriptions).await,
     }
-
-    handle_subscription(value, subscriptions).await;
 }
 
 async fn handle_subscription(
     map: &Value,
-    subscriptions: &Arc<Mutex<HashMap<String, Box<dyn AnySubscription + Send + Sync>>>>,
+    subscriptions: &Arc<Mutex<HashMap<String, Subscription>>>,
 ) {
-    let subscription_id = match map
+    let Some(id) = map
         .get("params")
-        .and_then(|params| params.get("subscription"))
-        .and_then(|sub| sub.as_str())
-    {
-        Some(id) => id,
-        None => return,
+        .and_then(|p| p.get("subscription"))
+        .and_then(|s| s.as_str())
+    else {
+        return;
     };
 
-    let subs = subscriptions.lock().await;
-    let sub = match subs.get(subscription_id) {
-        Some(s) if s.is_active() => s,
-        _ => return,
+    let Some(result) = map.get("params").and_then(|p| p.get("result")) else {
+        return;
     };
 
-    if let Some(params) = map.get("params") {
-        if let Some(result) = params.get("result") {
-            if let Some(entry) = sub.as_any().downcast_ref::<SubscriptionEntry<Value>>() {
-                let _ = entry.sender.send(result.clone()).await;
-            }
-        }
+    if let Some(sub) = subscriptions.lock().await.get(id) {
+        let _ = sub.sender.send(result.clone()).await;
     }
 }
