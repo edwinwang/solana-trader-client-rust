@@ -1,6 +1,6 @@
 use anyhow::Result;
 use solana_trader_client_rust::{
-    common::{constants::USDC, constants::WRAPPED_SOL},
+    common::constants::{MAINNET_PUMP_NY, USDC, WRAPPED_SOL},
     provider::ws::WebSocketClient,
 };
 use solana_trader_proto::api;
@@ -154,7 +154,7 @@ async fn test_pump_fun_quotes_ws(
     quote_type: &str,
     amount: f64,
 ) -> Result<()> {
-    let client = WebSocketClient::new(None).await?;
+    let client = WebSocketClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
 
     let request = api::GetPumpFunQuotesRequest {
         mint_address: mint_address.to_string(),

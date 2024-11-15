@@ -68,8 +68,10 @@ pub struct GrpcClient {
 impl GrpcClient {
     pub async fn new(endpoint: Option<String>) -> Result<Self> {
         let base = BaseConfig::try_from_env()?;
-        let (base_url, secure) = get_base_url_from_env();
-        let endpoint = endpoint.unwrap_or_else(|| grpc_endpoint(&base_url, secure));
+        let (default_base_url, secure) = get_base_url_from_env();
+        let final_base_url = endpoint.unwrap_or(default_base_url);
+        let endpoint = grpc_endpoint(&final_base_url, secure);
+
         if CryptoProvider::get_default().is_none() {
             default_provider()
                 .install_default()

@@ -31,8 +31,9 @@ pub struct WebSocketClient {
 impl WebSocketClient {
     pub async fn new(endpoint: Option<String>) -> Result<Self> {
         let base = BaseConfig::try_from_env()?;
-        let (base_url, secure) = get_base_url_from_env();
-        let endpoint = endpoint.unwrap_or_else(|| ws_endpoint(&base_url, secure));
+        let (default_base_url, secure) = get_base_url_from_env();
+        let final_base_url = endpoint.unwrap_or(default_base_url);
+        let endpoint = ws_endpoint(&final_base_url, secure);
 
         if base.auth_header.is_empty() {
             return Err(anyhow::anyhow!("AUTH_HEADER is empty"));

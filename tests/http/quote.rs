@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use solana_trader_client_rust::{
-    common::{constants::USDC, constants::WRAPPED_SOL},
+    common::constants::{MAINNET_PUMP_NY, USDC, WRAPPED_SOL},
     provider::http::HTTPClient,
 };
 use solana_trader_proto::api;
@@ -136,7 +136,7 @@ async fn test_pump_fun_quotes_http(
     quote_type: &str,
     amount: f64,
 ) -> Result<()> {
-    let client = HTTPClient::new(None)?;
+    let client = HTTPClient::new(Some(MAINNET_PUMP_NY.to_string()))?;
 
     let request = api::GetPumpFunQuotesRequest {
         mint_address: mint_address.to_string(),

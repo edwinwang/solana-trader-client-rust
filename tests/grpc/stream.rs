@@ -1,5 +1,8 @@
 use anyhow::Result;
-use solana_trader_client_rust::{common::constants::WRAPPED_SOL, provider::grpc::GrpcClient};
+use solana_trader_client_rust::{
+    common::constants::{MAINNET_PUMP_NY, WRAPPED_SOL},
+    provider::grpc::GrpcClient,
+};
 use solana_trader_proto::api;
 use test_case::test_case;
 use tokio_stream::StreamExt;
@@ -437,7 +440,7 @@ async fn test_bundle_tip_stream_grpc(expected_responses: usize) -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_pump_fun_new_tokens_stream_grpc(expected_responses: usize) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
     let mut stream = client.get_pump_fun_new_tokens_stream().await?;
 
     println!("starting pump fun new tokens stream");
@@ -469,7 +472,7 @@ async fn test_pump_fun_new_tokens_stream_grpc(expected_responses: usize) -> Resu
 #[tokio::test]
 #[ignore]
 async fn test_pump_fun_tokens_and_swaps_integration_grpc() -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
 
     let mut tokens_stream = client.get_pump_fun_new_tokens_stream().await?;
     let new_token = tokens_stream

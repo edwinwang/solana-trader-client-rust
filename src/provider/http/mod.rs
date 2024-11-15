@@ -32,8 +32,9 @@ pub struct HTTPClient {
 impl HTTPClient {
     pub fn new(endpoint: Option<String>) -> Result<Self> {
         let base = BaseConfig::try_from_env()?;
-        let (base_url, secure) = get_base_url_from_env();
-        let endpoint = endpoint.unwrap_or_else(|| http_endpoint(&base_url, secure));
+        let (default_base_url, secure) = get_base_url_from_env();
+        let final_base_url = endpoint.unwrap_or(default_base_url);
+        let endpoint = http_endpoint(&final_base_url, secure);
 
         let headers = Self::build_headers(&base.auth_header)?;
         let client = Client::builder()

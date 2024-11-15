@@ -1,6 +1,6 @@
 use anyhow::Result;
 use solana_trader_client_rust::{
-    common::{constants::USDC, constants::WRAPPED_SOL},
+    common::constants::{MAINNET_PUMP_NY, USDC, WRAPPED_SOL},
     provider::grpc::GrpcClient,
 };
 use solana_trader_proto::api;
@@ -132,7 +132,7 @@ async fn test_pump_fun_quotes_grpc(
     quote_type: &str,
     amount: f64,
 ) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
 
     // note slippage is still needed as part of the proto
     let request = api::GetPumpFunQuotesRequest {
