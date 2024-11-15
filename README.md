@@ -1,11 +1,5 @@
 # solana-trader-client-rust
 
-With the `solana-trader-proto` in the right path:
-
-``solana-trader-proto = { path = "../solana-trader-proto" }``
-
-Change this above line to the path where your proto repo is, for now. **this will be updated to the published crate eventually**
-
 # Environment setup
 set the necessary environment variables:
 
@@ -33,6 +27,26 @@ PRIVATE_KEY="......."
 AUTH_HEADER="......"
 NETWORK=MAINNET
 REGION=NY
+```
+
+### Vscode 
+Tests can also be ran/debugged on click with vscode. 
+Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and fill in the auth key:
+
+```json
+{
+    "rust-analyzer.runnables.extraEnv": {
+        "PRIVATE_KEY": "...",
+        "PUBLIC_KEY": "...",
+        "AUTH_HEADER": "...",
+        "NETWORK": "MAINNET",
+    },
+    "rust-analyzer.runnables.extraArgs": [
+        "--",
+        "--ignored",
+        "--nocapture"
+    ],
+}
 ```
 
 **If no region is defined, the SDK will use default to LOCAL**
@@ -67,24 +81,4 @@ Using the `test_case` crate tests are parametrized:
 #[test_case("BTC", "USDC", 0.1, 0.1 ; "BTC to USDC with 0.1% slippage")]
 // new test case
 #[test_case("BTC", "USDC", 0.1, 10 ; "BTC to USDC with 10% slippage")]
-```
-
-## Vscode 
-Tests can also be ran/debugged on click with vscode. 
-Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and fill in the auth key:
-
-```json
-{
-    "rust-analyzer.runnables.extraEnv": {
-        "PRIVATE_KEY": "...",
-        "PUBLIC_KEY": "...",
-        "AUTH_HEADER": "...",
-        "NETWORK": "MAINNET",
-    },
-    "rust-analyzer.runnables.extraArgs": [
-        "--",
-        "--ignored",
-        "--nocapture"
-    ],
-}
 ```
