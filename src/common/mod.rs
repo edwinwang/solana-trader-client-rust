@@ -36,13 +36,13 @@ pub fn get_base_url_from_env() -> (String, bool) {
         ("MAINNET", "NY") => (MAINNET_NY.to_string(), true),
         ("MAINNET_PUMP", "NY") => (MAINNET_PUMP_NY.to_string(), true),
         ("MAINNET_PUMP", "UK") => (MAINNET_PUMP_UK.to_string(), true),
-        _ => (LOCAL.to_string(), false), // Default to local to make it fail
+        _ => (MAINNET_NY.to_string(), false),
     }
 }
 
 pub struct BaseConfig {
-    pub keypair: Option<Keypair>,
     pub auth_header: String,
+    pub keypair: Option<Keypair>,
     pub public_key: Option<Pubkey>,
 }
 

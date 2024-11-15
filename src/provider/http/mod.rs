@@ -15,7 +15,7 @@ use solana_trader_proto::api::GetRecentBlockHashResponseV2;
 use crate::{
     common::{
         get_base_url_from_env, http_endpoint,
-        signing::{get_keypair, sign_transaction},
+        signing::{get_keypair, sign_transaction, SubmitParams},
         BaseConfig,
     },
     provider::utils::convert_string_enums,
@@ -33,8 +33,9 @@ pub struct HTTPClient {
 impl HTTPClient {
     pub fn new(endpoint: Option<String>) -> Result<Self> {
         let base = BaseConfig::try_from_env()?;
-        let (base_url, secure) = get_base_url_from_env();
-        let endpoint = endpoint.unwrap_or_else(|| http_endpoint(&base_url, secure));
+        let (default_base_url, secure) = get_base_url_from_env();
+        let final_base_url = endpoint.unwrap_or(default_base_url);
+        let endpoint = http_endpoint(&final_base_url, secure);
 
         let headers = Self::build_headers(&base.auth_header)?;
         let client = Client::builder()
@@ -76,6 +77,8 @@ impl HTTPClient {
 
         let res = response.text().await?;
 
+        println!("{:?}", res);
+
         let mut value = serde_json::from_str(&res)
             .map_err(|e| anyhow::anyhow!("Failed to parse response as JSON: {}", e))?;
 
@@ -88,15 +91,12 @@ impl HTTPClient {
     pub async fn sign_and_submit<T: IntoTransactionMessage + Clone>(
         &self,
         txs: Vec<T>,
-        skip_pre_flight: bool,
-        front_running_protection: bool,
-        use_staked_rpcs: bool,
-        fast_best_effort: bool,
+        submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
         let keypair = get_keypair(&self.keypair)?;
 
-        // Get recent blockhash
+        // TODO: refactor once this endpoint is defined
         let response = self
             .client
             .get(format!(
@@ -108,16 +108,15 @@ impl HTTPClient {
 
         let res: GetRecentBlockHashResponseV2 = self.handle_response(response).await?;
 
-        // Handle single transaction case
         if txs.len() == 1 {
             let signed_tx = sign_transaction(&txs[0], keypair, res.block_hash).await?;
 
             let request_json = json!({
                 "transaction": { "content": signed_tx.content, "isCleanup": signed_tx.is_cleanup },
-                "skipPreFlight": skip_pre_flight,
-                "frontRunningProtection": front_running_protection,
-                "useStakedRPCs": use_staked_rpcs,
-                "fastBestEffort": fast_best_effort
+                "skipPreFlight": submit_opts.skip_pre_flight,
+                "frontRunningProtection": submit_opts.front_running_protection,
+                "useStakedRPCs": submit_opts.use_staked_rpcs,
+                "fastBestEffort": submit_opts.fast_best_effort
             });
 
             let response = self
@@ -135,7 +134,6 @@ impl HTTPClient {
                 .ok_or_else(|| anyhow!("Missing signature in response"))?]);
         }
 
-        // Handle batch case
         let mut entries = Vec::with_capacity(txs.len());
         for tx in txs {
             let signed_tx = sign_transaction(&tx, keypair, res.block_hash.clone()).await?;
@@ -144,17 +142,17 @@ impl HTTPClient {
                     "content": signed_tx.content,
                     "isCleanup": signed_tx.is_cleanup
                 },
-                "skipPreFlight": skip_pre_flight,
-                "frontRunningProtection": front_running_protection,
-                "useStakedRPCs": use_staked_rpcs,
-                "fastBestEffort": fast_best_effort
+                "skipPreFlight": submit_opts.skip_pre_flight,
+                "frontRunningProtection": submit_opts.front_running_protection,
+                "useStakedRPCs": submit_opts.use_staked_rpcs,
+                "fastBestEffort": submit_opts.fast_best_effort
             }));
         }
 
         let request_json = json!({
             "entries": entries,
             "useBundle": use_bundle,
-            "submitStrategy": 0
+            "submitStrategy": submit_opts.submit_strategy
         });
 
         let response = self
@@ -166,7 +164,6 @@ impl HTTPClient {
 
         let result: serde_json::Value = self.handle_response(response).await?;
 
-        // Extract signatures from successful transactions
         let signatures = result["transactions"]
             .as_array()
             .ok_or_else(|| anyhow!("Invalid response format"))?

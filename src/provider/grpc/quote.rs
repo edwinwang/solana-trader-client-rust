@@ -85,4 +85,34 @@ impl GrpcClient {
 
         Ok(response.into_inner())
     }
+
+    pub async fn get_raydium_prices(
+        &mut self,
+        tokens: Vec<String>,
+    ) -> Result<api::GetRaydiumPricesResponse> {
+        let request = Request::new(api::GetRaydiumPricesRequest { tokens });
+
+        let response = self
+            .client
+            .get_raydium_prices(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetRaydiumPrices error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_jupiter_prices(
+        &mut self,
+        tokens: Vec<String>,
+    ) -> Result<api::GetJupiterPricesResponse> {
+        let request = Request::new(api::GetJupiterPricesRequest { tokens });
+
+        let response = self
+            .client
+            .get_jupiter_prices(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetJupiterPrices error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
 }

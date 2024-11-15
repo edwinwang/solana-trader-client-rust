@@ -1,4 +1,5 @@
 use anyhow::Result;
+use solana_trader_client_rust::common::signing::SubmitParams;
 use solana_trader_client_rust::common::{constants::USDC, constants::WRAPPED_SOL};
 use solana_trader_client_rust::provider::http::HTTPClient;
 use solana_trader_proto::api;
@@ -43,8 +44,9 @@ async fn test_raydium_swap_http(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -102,10 +104,52 @@ async fn test_raydium_route_swap_http(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
+
+    Ok(())
+}
+
+#[test_case(
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",  // USDC
+    "So11111111111111111111111111111111111111112",   // SOL
+    0.001,                                           // Amount
+    0.4;                                             // Slippage
+    "Raydium swap instructions USDC to SOL via HTTP"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_raydium_swap_instructions_http(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    slippage: f64,
+) -> Result<()> {
+    let client = HTTPClient::new(None)?;
+
+    let request = api::PostRaydiumSwapInstructionsRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Raydium swap instructions"))
+            .to_string(),
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
+        compute_limit: 300000,
+        compute_price: 2000,
+        tip: Some(2000001),
+    };
+
+    let submit_opts = SubmitParams::default();
+    let signatures = client
+        .submit_raydium_swap_instructions(request, submit_opts, false)
+        .await?;
+
+    println!("Raydium swap instructions signatures: {:#?}", signatures);
 
     Ok(())
 }
@@ -149,8 +193,9 @@ async fn test_raydium_cpmm_swap_http(
     );
 
     let txs = response.transaction.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -195,8 +240,9 @@ async fn test_raydium_clmm_swap_http(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -254,8 +300,9 @@ async fn test_raydium_clmm_route_swap_http(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -301,8 +348,9 @@ async fn test_jupiter_swap_http(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
 
@@ -366,10 +414,52 @@ async fn test_jupiter_route_swap_http(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium signature: {:#?}", s?);
+
+    Ok(())
+}
+
+#[test_case(
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+    "So11111111111111111111111111111111111111112",   // SOL
+    0.001,                                            // Amount
+    0.4;                                              // Slippage
+    "Jupiter swap instructions USDC to SOL via HTTP"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_jupiter_swap_instructions_http(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    slippage: f64,
+) -> Result<()> {
+    let client = HTTPClient::new(None)?;
+
+    let request = api::PostJupiterSwapInstructionsRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Jupiter swap instructions"))
+            .to_string(),
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
+        compute_price: 2000,
+        tip: Some(2000001),
+        fast_mode: None,
+    };
+
+    let submit_opts = SubmitParams::default();
+    let signatures = client
+        .submit_jupiter_swap_instructions(request, submit_opts, false)
+        .await?;
+
+    println!("Jupiter swap instructions signatures: {:#?}", signatures);
 
     Ok(())
 }

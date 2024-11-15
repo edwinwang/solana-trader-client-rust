@@ -1,11 +1,5 @@
 # solana-trader-client-rust
 
-With the `solana-trader-proto` in the right path:
-
-``solana-trader-proto = { path = "../../services/solana-trader-proto/rust" }``
-
-Change this above line to the path where your proto repo is, for now. **this will be updated to the published crate eventually**
-
 # Environment setup
 set the necessary environment variables:
 
@@ -33,6 +27,26 @@ PRIVATE_KEY="......."
 AUTH_HEADER="......"
 NETWORK=MAINNET
 REGION=NY
+```
+
+### Vscode 
+Tests can also be ran/debugged on click with vscode. 
+Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and fill in the auth key:
+
+```json
+{
+    "rust-analyzer.runnables.extraEnv": {
+        "PRIVATE_KEY": "...",
+        "PUBLIC_KEY": "...",
+        "AUTH_HEADER": "...",
+        "NETWORK": "MAINNET",
+    },
+    "rust-analyzer.runnables.extraArgs": [
+        "--",
+        "--ignored",
+        "--nocapture"
+    ],
+}
 ```
 
 **If no region is defined, the SDK will use default to LOCAL**
@@ -68,45 +82,3 @@ Using the `test_case` crate tests are parametrized:
 // new test case
 #[test_case("BTC", "USDC", 0.1, 10 ; "BTC to USDC with 10% slippage")]
 ```
-
-## Vscode 
-Tests can also be ran/debugged on click with vscode. 
-Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and fill in the auth key:
-
-```json
-{
-    "rust-analyzer.runnables.extraEnv": {
-        "PRIVATE_KEY": "...",
-        "PUBLIC_KEY": "...",
-        "AUTH_HEADER": "...",
-        "NETWORK": "MAINNET",
-    },
-    "rust-analyzer.runnables.extraArgs": [
-        "--",
-        "--ignored",
-        "--nocapture"
-    ],
-}
-```
-
-## Troubleshooting Guide
-Issues related to dependency management / fetching external git respoitories
-
-```
- Updating git repository `https://github.com/anza-xyz/curve25519-dalek.git`
-error: failed to load source for dependency `curve25519-dalek`
-
-Caused by:
-  Unable to update https://github.com/anza-xyz/curve25519-dalek.git?rev=b500cdc2a920cd5bff9e2dd974d7b97349d61464
-```
-
-This is most likely an issue with your `/.ssh/config`
-The following commands with `ssh-agent` may help: 
-
-```
-eval `ssh-agent -s`
-ssh-add
-cargo build
-```
-
-

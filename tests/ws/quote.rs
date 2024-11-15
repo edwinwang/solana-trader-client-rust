@@ -1,6 +1,6 @@
 use anyhow::Result;
 use solana_trader_client_rust::{
-    common::{constants::USDC, constants::WRAPPED_SOL},
+    common::constants::{MAINNET_PUMP_NY, USDC, WRAPPED_SOL},
     provider::ws::WebSocketClient,
 };
 use solana_trader_proto::api;
@@ -154,7 +154,7 @@ async fn test_pump_fun_quotes_ws(
     quote_type: &str,
     amount: f64,
 ) -> Result<()> {
-    let client = WebSocketClient::new(None).await?;
+    let client = WebSocketClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
 
     let request = api::GetPumpFunQuotesRequest {
         mint_address: mint_address.to_string(),
@@ -226,6 +226,8 @@ async fn test_jupiter_quotes_ws(
     Ok(())
 }
 
+// TODO:
+// Error: Error: Failed to parse result: invalid type: string "P_JUPITER", expected i32
 #[test_case(
     "So11111111111111111111111111111111111111112",
     "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
@@ -280,5 +282,43 @@ async fn test_get_quotes_ws(
     }
 
     client.close().await?;
+    Ok(())
+}
+
+#[test_case(
+    vec![
+        "So11111111111111111111111111111111111111112".to_string(),
+        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263".to_string(),
+    ];
+    "SOL and BONK prices via WebSocket"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_raydium_prices_ws(tokens: Vec<String>) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+
+    let response = ws.get_raydium_prices(tokens).await?;
+    println!("Raydium prices response: {:#?}", response);
+
+    ws.close().await?;
+    Ok(())
+}
+
+#[test_case(
+    vec![
+        "So11111111111111111111111111111111111111112".to_string(),  // SOL
+        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263".to_string(), // BONK
+    ];
+    "SOL and BONK prices via WebSocket"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_jupiter_prices_ws(tokens: Vec<String>) -> Result<()> {
+    let ws = WebSocketClient::new(None).await?;
+
+    let response = ws.get_jupiter_prices(tokens).await?;
+    println!("Jupiter prices response: {:#?}", response);
+
+    ws.close().await?;
     Ok(())
 }

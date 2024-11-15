@@ -5,6 +5,7 @@ mod general;
 
 use anyhow::Result;
 use rustls::crypto::ring::default_provider;
+use rustls::crypto::CryptoProvider;
 use solana_sdk::pubkey::Pubkey;
 use solana_trader_proto::api;
 use std::collections::HashMap;
@@ -14,7 +15,7 @@ use tonic::{
     metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel,
 };
 
-use crate::common::signing::{get_keypair, sign_transaction};
+use crate::common::signing::{get_keypair, sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig};
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::{
@@ -68,11 +69,15 @@ pub struct GrpcClient {
 impl GrpcClient {
     pub async fn new(endpoint: Option<String>) -> Result<Self> {
         let base = BaseConfig::try_from_env()?;
-        let (base_url, secure) = get_base_url_from_env();
-        let endpoint = endpoint.unwrap_or_else(|| grpc_endpoint(&base_url, secure));
-        default_provider()
-            .install_default()
-            .map_err(|e| anyhow::anyhow!("Failed to install crypto provider: {:?}", e))?;
+        let (default_base_url, secure) = get_base_url_from_env();
+        let final_base_url = endpoint.unwrap_or(default_base_url);
+        let endpoint = grpc_endpoint(&final_base_url, secure);
+
+        if CryptoProvider::get_default().is_none() {
+            default_provider()
+                .install_default()
+                .map_err(|e| anyhow::anyhow!("Failed to install crypto provider: {:?}", e))?;
+        }
 
         let channel = Channel::from_shared(endpoint.clone())
             .map_err(|e| anyhow::anyhow!("Invalid URI: {}", e))?
@@ -95,10 +100,7 @@ impl GrpcClient {
     pub async fn sign_and_submit<T: IntoTransactionMessage + Clone>(
         &mut self,
         txs: Vec<T>,
-        skip_pre_flight: bool,
-        front_running_protection: bool,
-        use_staked_rpcs: bool,
-        fast_best_effort: bool,
+        submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
         let keypair = get_keypair(&self.keypair)?;
@@ -118,11 +120,13 @@ impl GrpcClient {
                     content: signed_tx.content,
                     is_cleanup: signed_tx.is_cleanup,
                 }),
-                skip_pre_flight,
-                front_running_protection: Some(front_running_protection),
-                use_staked_rp_cs: Some(use_staked_rpcs),
-                fast_best_effort: Some(fast_best_effort),
+                skip_pre_flight: submit_opts.skip_pre_flight,
+                front_running_protection: Some(submit_opts.front_running_protection),
+                use_staked_rp_cs: Some(submit_opts.use_staked_rpcs),
+                fast_best_effort: Some(submit_opts.fast_best_effort),
                 tip: None,
+                allow_back_run: submit_opts.allow_bank_run,
+                revenue_address: submit_opts.revenue_address,
             };
 
             let signature = self
@@ -144,7 +148,7 @@ impl GrpcClient {
                     content: signed_tx.content,
                     is_cleanup: signed_tx.is_cleanup,
                 }),
-                skip_pre_flight,
+                skip_pre_flight: submit_opts.skip_pre_flight,
             };
             entries.push(entry);
         }
@@ -152,8 +156,8 @@ impl GrpcClient {
         let batch_request = api::PostSubmitBatchRequest {
             entries,
             use_bundle: Some(use_bundle),
-            submit_strategy: 0,
-            front_running_protection: Some(front_running_protection),
+            submit_strategy: submit_opts.submit_strategy.into(),
+            front_running_protection: Some(submit_opts.front_running_protection),
         };
 
         let response = self

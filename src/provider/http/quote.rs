@@ -114,13 +114,22 @@ impl HTTPClient {
         limit: i32,
         projects: &[api::Project],
     ) -> Result<api::GetQuotesResponse> {
-        let project_params: Vec<String> = projects.iter().map(|p| format!("&project={}", *p as i32)).collect();        
+        let project_params: Vec<String> = projects
+            .iter()
+            .map(|p| format!("&project={}", *p as i32))
+            .collect();
 
         let url = format!(
             "{}/api/v1/market/quote?inToken={}&outToken={}&inAmount={}&slippage={}&limit={}{}",
-            self.base_url, in_token, out_token, in_amount, slippage, limit, project_params.join("")
+            self.base_url,
+            in_token,
+            out_token,
+            in_amount,
+            slippage,
+            limit,
+            project_params.join("")
         );
-        
+
         let response = self
             .client
             .get(&url)
@@ -137,5 +146,37 @@ impl HTTPClient {
 
         serde_json::from_value(value)
             .map_err(|e| anyhow::anyhow!("Failed to parse response into GetQuotesResponse: {}", e))
+    }
+
+    pub async fn get_raydium_prices(
+        &self,
+        tokens: Vec<String>,
+    ) -> Result<api::GetRaydiumPricesResponse> {
+        let mut url = format!("{}/api/v2/raydium/prices?", self.base_url);
+        for (i, token) in tokens.iter().enumerate() {
+            if i > 0 {
+                url.push('&');
+            }
+            url.push_str(&format!("tokens={}", token));
+        }
+
+        let response = self.client.get(&url).send().await?;
+        self.handle_response(response).await
+    }
+
+    pub async fn get_jupiter_prices(
+        &self,
+        tokens: Vec<String>,
+    ) -> Result<api::GetJupiterPricesResponse> {
+        let mut url = format!("{}/api/v2/jupiter/prices?", self.base_url);
+        for (i, token) in tokens.iter().enumerate() {
+            if i > 0 {
+                url.push('&');
+            }
+            url.push_str(&format!("tokens={}", token));
+        }
+
+        let response = self.client.get(&url).send().await?;
+        self.handle_response(response).await
     }
 }

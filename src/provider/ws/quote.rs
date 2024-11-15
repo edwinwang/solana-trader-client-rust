@@ -1,5 +1,6 @@
 use super::WebSocketClient;
 use anyhow::Result;
+use serde_json::json;
 use solana_trader_proto::api;
 
 impl WebSocketClient {
@@ -70,5 +71,23 @@ impl WebSocketClient {
             .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
 
         self.conn.request("GetQuotes", params).await
+    }
+
+    pub async fn get_raydium_prices(
+        &self,
+        tokens: Vec<String>,
+    ) -> Result<api::GetRaydiumPricesResponse> {
+        let request = api::GetRaydiumPricesRequest { tokens };
+
+        self.conn.request("GetRaydiumPrices", json!(request)).await
+    }
+
+    pub async fn get_jupiter_prices(
+        &self,
+        tokens: Vec<String>,
+    ) -> Result<api::GetJupiterPricesResponse> {
+        let request = api::GetJupiterPricesRequest { tokens };
+
+        self.conn.request("GetJupiterPrices", json!(request)).await
     }
 }

@@ -1,12 +1,13 @@
 use anyhow::Result;
-use dotenv::dotenv;
 use solana_trader_client_rust::{
-    common::constants::{USDC, WRAPPED_SOL},
+    common::{
+        constants::{MAINNET_PUMP_NY, USDC, WRAPPED_SOL},
+        signing::SubmitParams,
+    },
     provider::grpc::GrpcClient,
 };
 use solana_trader_proto::api;
 use solana_trader_proto::common::Fee;
-use std::env;
 use test_case::test_case;
 
 #[test_case(
@@ -47,10 +48,52 @@ async fn test_raydium_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("rayidum signature : {:#?}", s?);
+
+    Ok(())
+}
+
+#[test_case(
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+    "So11111111111111111111111111111111111111112",   // SOL
+    0.001,                                            // Amount
+    0.4;                                              // Slippage
+    "Raydium swap instructions USDC to SOL"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_raydium_swap_instructions_grpc(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    slippage: f64,
+) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let request = api::PostRaydiumSwapInstructionsRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Raydium swap instructions"))
+            .to_string(),
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
+        compute_limit: 300000,
+        compute_price: 2000,
+        tip: Some(2000001),
+    };
+
+    let submit_opts = SubmitParams::default();
+    let signatures = client
+        .submit_raydium_swap_instructions(request, submit_opts, false)
+        .await?;
+
+    println!("Raydium swap instructions signatures: {:#?}", signatures);
 
     Ok(())
 }
@@ -106,8 +149,9 @@ async fn test_raydium_route_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium Route signature: {:#?}", s?);
 
@@ -153,8 +197,9 @@ async fn test_raydium_cpmm_swap_grpc(
     );
 
     let txs = response.transaction.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium CPMM signature: {:#?}", s?);
 
@@ -199,8 +244,9 @@ async fn test_raydium_clmm_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium CLMM signature: {:#?}", s?);
 
@@ -258,8 +304,9 @@ async fn test_raydium_clmm_route_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Raydium CLMM Route signature: {:#?}", s?);
 
@@ -305,8 +352,10 @@ async fn test_jupiter_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Jupiter signature: {:#?}", s?);
 
@@ -370,10 +419,52 @@ async fn test_jupiter_route_swap_grpc(
     );
 
     let txs = response.transactions.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("Jupiter Route signature: {:#?}", s?);
+
+    Ok(())
+}
+
+#[test_case(
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+    "So11111111111111111111111111111111111111112",   // SOL
+    0.001,                                            // Amount
+    0.4;                                              // Slippage
+    "Jupiter swap instructions USDC to SOL"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_jupiter_swap_instructions_grpc(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    slippage: f64,
+) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let request = api::PostJupiterSwapInstructionsRequest {
+        owner_address: client
+            .public_key
+            .unwrap_or_else(|| panic!("Public key is required for Jupiter swap instructions"))
+            .to_string(),
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
+        fast_mode: None,
+        compute_price: 10000,
+        tip: Some(10000),
+    };
+
+    let submit_opts = SubmitParams::default();
+    let signatures = client
+        .submit_jupiter_swap_instructions(request, submit_opts, false)
+        .await?;
+
+    println!("Jupiter swap instructions signatures: {:#?}", signatures);
 
     Ok(())
 }
@@ -386,11 +477,9 @@ async fn test_jupiter_route_swap_grpc(
 #[tokio::test]
 #[ignore]
 async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
-    dotenv().ok();
     let bonding_curve_address = "Fh8fnZUVEpPStJ2hKFNNjMAyuyvoJLMouENawg4DYCBc";
     let mint_address = "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump";
-    env::set_var("NETWORK", "MAINNET_PUMP");
-    let mut client = GrpcClient::new(None).await?;
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
 
     let request = api::GetPumpFunQuotesRequest {
         quote_type: "buy".to_string(),
@@ -424,8 +513,9 @@ async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
     );
 
     let txs = response.transaction.as_slice();
+    let submit_opts = SubmitParams::default();
     let s = client
-        .sign_and_submit(txs.to_vec(), true, false, false, false, false)
+        .sign_and_submit(txs.to_vec(), submit_opts, false)
         .await;
     println!("signature : {:#?}", s?);
     Ok(())

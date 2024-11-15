@@ -1,6 +1,6 @@
 use anyhow::Result;
 use solana_trader_client_rust::{
-    common::{constants::USDC, constants::WRAPPED_SOL},
+    common::constants::{MAINNET_PUMP_NY, USDC, WRAPPED_SOL},
     provider::grpc::GrpcClient,
 };
 use solana_trader_proto::api;
@@ -36,7 +36,7 @@ async fn test_raydium_quotes_grpc(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -73,7 +73,7 @@ async fn test_raydium_cpmm_quotes_grpc(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -110,7 +110,7 @@ async fn test_raydium_clmm_quotes_grpc(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -132,7 +132,7 @@ async fn test_pump_fun_quotes_grpc(
     quote_type: &str,
     amount: f64,
 ) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
 
     // note slippage is still needed as part of the proto
     let request = api::GetPumpFunQuotesRequest {
@@ -186,7 +186,7 @@ async fn test_jupiter_quotes_grpc(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -242,6 +242,42 @@ async fn test_get_quotes_grpc(
             quote.project
         );
     }
+
+    Ok(())
+}
+
+#[test_case(
+    vec![
+        "So11111111111111111111111111111111111111112".to_string(),  // SOL
+        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263".to_string(), // BONK
+    ];
+    "SOL and BONK prices"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_raydium_prices_grpc(tokens: Vec<String>) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let response = client.get_raydium_prices(tokens).await?;
+    println!("Raydium prices response: {:#?}", response);
+
+    Ok(())
+}
+
+#[test_case(
+    vec![
+        "So11111111111111111111111111111111111111112".to_string(),  // SOL
+        "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263".to_string(), // BONK
+    ];
+    "SOL and BONK prices via gRPC"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_jupiter_prices_grpc(tokens: Vec<String>) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let response = client.get_jupiter_prices(tokens).await?;
+    println!("Jupiter prices response: {:#?}", response);
 
     Ok(())
 }
