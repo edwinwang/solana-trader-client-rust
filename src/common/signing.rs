@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
-use base64::{engine::general_purpose, Engine as _};
-use bincode::deserialize;
+use base64::{engine::general_purpose::STANDARD, Engine};
+use bincode::{deserialize, serialize};
 use serde::Serialize;
 use solana_sdk::{
     message::VersionedMessage,
@@ -18,7 +18,7 @@ pub struct SubmitParams {
     pub front_running_protection: bool,
     pub use_staked_rpcs: bool,
     pub fast_best_effort: bool,
-    pub submit_strategy: api::SubmitStrategy
+    pub submit_strategy: api::SubmitStrategy,
 }
 
 impl Default for SubmitParams {
@@ -28,7 +28,7 @@ impl Default for SubmitParams {
             front_running_protection: false,
             use_staked_rpcs: true,
             fast_best_effort: false,
-            submit_strategy: api::SubmitStrategy::PSubmitAll
+            submit_strategy: api::SubmitStrategy::PSubmitAll,
         }
     }
 }
@@ -39,48 +39,58 @@ pub struct SignedTransaction {
     pub is_cleanup: bool,
 }
 
-pub async fn sign_transaction<T: IntoTransactionMessage + Clone>(
+pub async fn sign_transaction<T>(
     tx: &T,
     keypair: &Keypair,
     blockhash: String,
-) -> Result<SignedTransaction> {
+) -> Result<SignedTransaction>
+where
+    T: IntoTransactionMessage + Clone,
+{
     let tx_message = tx.clone().into_transaction_message();
+    let rawbytes = STANDARD.decode(&tx_message.content)?;
+    let parsed_hash = blockhash.parse()?;
 
-    let rawbytes = general_purpose::STANDARD.decode(&tx_message.content)?;
-
-    let result = bincode::deserialize::<VersionedTransaction>(&rawbytes);
-
-    let signed_data = match result {
-        Ok(mut versioned_tx) => {
-            let parsed_hash = blockhash.parse()?;
-            match &mut versioned_tx.message {
-                VersionedMessage::Legacy(message) => {
-                    message.recent_blockhash = parsed_hash;
-                }
-                VersionedMessage::V0(message) => {
-                    message.recent_blockhash = parsed_hash;
-                }
-            }
-
-            versioned_tx.signatures = vec![Signature::default(); 1];
-            let message_data = versioned_tx.message.serialize().to_vec();
-            let signature = keypair.sign_message(&message_data);
-            versioned_tx.signatures[0] = signature;
-
-            bincode::serialize(&versioned_tx)?
-        }
-        Err(_) => {
-            let mut legacy_tx: Transaction = deserialize(&rawbytes)?;
-            let parsed_hash = blockhash.parse()?;
-            legacy_tx.try_partial_sign(&[keypair], parsed_hash)?;
-            bincode::serialize(&legacy_tx)?
-        }
+    let signed_data = match deserialize(&rawbytes) {
+        Ok(versioned_tx) => sign_versioned_transaction(versioned_tx, keypair, parsed_hash)?,
+        Err(_) => sign_legacy_transaction(&rawbytes, keypair, parsed_hash)?,
     };
 
     Ok(SignedTransaction {
-        content: general_purpose::STANDARD.encode(signed_data),
+        content: STANDARD.encode(signed_data),
         is_cleanup: tx_message.is_cleanup,
     })
+}
+
+fn sign_versioned_transaction(
+    mut tx: VersionedTransaction,
+    keypair: &Keypair,
+    blockhash: solana_sdk::hash::Hash,
+) -> Result<Vec<u8>> {
+    match &mut tx.message {
+        VersionedMessage::Legacy(message) => {
+            message.recent_blockhash = blockhash;
+        }
+        VersionedMessage::V0(message) => {
+            message.recent_blockhash = blockhash;
+        }
+    }
+
+    tx.signatures = vec![Signature::default()];
+    let message_data = tx.message.serialize();
+    tx.signatures[0] = keypair.sign_message(&message_data);
+
+    Ok(serialize(&tx)?)
+}
+
+fn sign_legacy_transaction(
+    rawbytes: &[u8],
+    keypair: &Keypair,
+    blockhash: solana_sdk::hash::Hash,
+) -> Result<Vec<u8>> {
+    let mut tx: Transaction = deserialize(rawbytes)?;
+    tx.try_partial_sign(&[keypair], blockhash)?;
+    Ok(serialize(&tx)?)
 }
 
 pub fn get_keypair(keypair: &Option<Keypair>) -> Result<&Keypair> {

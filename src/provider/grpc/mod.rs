@@ -72,10 +72,10 @@ impl GrpcClient {
         let endpoint = endpoint.unwrap_or_else(|| grpc_endpoint(&base_url, secure));
         if CryptoProvider::get_default().is_none() {
             default_provider()
-            .install_default()
-            .map_err(|e| anyhow::anyhow!("Failed to install crypto provider: {:?}", e))?;
+                .install_default()
+                .map_err(|e| anyhow::anyhow!("Failed to install crypto provider: {:?}", e))?;
         }
-        
+
         let channel = Channel::from_shared(endpoint.clone())
             .map_err(|e| anyhow::anyhow!("Invalid URI: {}", e))?
             .tls_config(ClientTlsConfig::new().with_webpki_roots())
