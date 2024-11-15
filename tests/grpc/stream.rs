@@ -272,19 +272,13 @@ async fn test_new_raydium_pools_stream_grpc(include_cpmm: bool) -> Result<()> {
 
     let mut stream = client.get_new_raydium_pools_stream(include_cpmm).await?;
 
-    loop {
-        match stream.next().await {
-            Some(Ok(response)) => {
-                println!("Response received: {:#?}", response);
-                return Ok(());
-            }
-            Some(Err(e)) => {
-                return Err(anyhow::anyhow!("Stream error: {}", e));
-            }
-            None => {
-                return Err(anyhow::anyhow!("Stream ended without data"));
-            }
+    match stream.next().await {
+        Some(Ok(response)) => {
+            println!("Response received: {:#?}", response);
+            Ok(())
         }
+        Some(Err(e)) => Err(anyhow::anyhow!("Stream error: {}", e)),
+        None => Err(anyhow::anyhow!("Stream ended without data")),
     }
 }
 

@@ -36,7 +36,7 @@ async fn test_raydium_quotes_grpc(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -73,7 +73,7 @@ async fn test_raydium_cpmm_quotes_grpc(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -110,7 +110,7 @@ async fn test_raydium_clmm_quotes_grpc(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
@@ -186,7 +186,7 @@ async fn test_jupiter_quotes_grpc(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.routes.len() > 0,
+        !response.routes.is_empty(),
         "Expected at least one route in response"
     );
 
