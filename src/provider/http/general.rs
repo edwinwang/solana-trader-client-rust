@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use solana_trader_proto::api;
+use solana_trader_proto::api::GetAccountBalanceRequest;
 use crate::provider::http::HTTPClient;
 use crate::provider::utils::convert_string_enums;
 
@@ -62,6 +63,48 @@ impl HTTPClient {
         );
 
         println!("{}", url);
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn get_rate_limit(
+        &self,
+    ) -> anyhow::Result<api::GetRateLimitResponse> {
+        let url = format!(
+            "{}/api/v2/rate-limit",
+            self.base_url
+        );
+
+        println!("{}", url);
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn get_account_balance_v2(
+        &self,
+        request: GetAccountBalanceRequest,
+    ) -> anyhow::Result<api::GetAccountBalanceRequest> {
+
+        println!("here1");
+
+        let url = format!(
+            "{}/api/v2/balance?ownerAddress={}",
+            self.base_url, request.owner_address
+        );
 
         let response = self
             .client

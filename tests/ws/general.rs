@@ -2,8 +2,7 @@ use anyhow::Result;
 
 use solana_trader_client_rust::{
     provider::ws::WebSocketClient,
-    common::{constants::SAMPLE_TX_SIGNATURE}
-
+    common::{constants::SAMPLE_TX_SIGNATURE, constants::SAMPLE_OWNER_ADDR}
 };
 use solana_trader_proto::api;
 use test_case::test_case;
@@ -72,5 +71,46 @@ async fn test_get_recent_block_hash_v2_ws() -> Result<()> {
 
         assert_ne!(response.block_hash, "", "Expected a recent blockhash");
     }
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_get_rate_limit_ws() -> Result<()> {
+    let client = WebSocketClient::new(None).await?;
+
+    let request = api::GetRateLimitRequest {
+    };
+
+    let response = client.get_rate_limit(request).await?;
+    println!(
+        "Get Rate Limit Response: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+    assert_ne!(response.tier, "", "Expected a valid account tier");
+
+    Ok(())
+}
+
+#[test_case(
+    SAMPLE_OWNER_ADDR
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_account_balance_v2_ws(    owner_addr: &str,
+) -> Result<()> {
+    let client = WebSocketClient::new(None).await?;
+
+    let request = api::GetAccountBalanceRequest {owner_address: owner_addr.to_string()};
+
+    let response = client.get_account_balance_v2(request).await?;
+    println!(
+        "GetAccountBalanceV2 Response: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+    assert!(
+        response.tokens.len() > 0,
+        "Expected at least one token account"
+    );
     Ok(())
 }

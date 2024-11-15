@@ -57,4 +57,16 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
+    pub async fn get_account_balance_v2(
+        &mut self,
+        request: &api::GetAccountBalanceRequest,
+    ) -> Result<api::GetAccountBalanceResponse> {
+        let response = self
+            .client
+            .get_account_balance_v2(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("GetAccountBalanceV2 error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
 }

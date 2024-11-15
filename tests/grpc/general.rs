@@ -1,8 +1,7 @@
 use anyhow::Result;
 use solana_trader_client_rust::{
     provider::grpc::GrpcClient,
-    common::{constants::SAMPLE_TX_SIGNATURE}
-
+    common::{constants::SAMPLE_TX_SIGNATURE, constants::SAMPLE_OWNER_ADDR}
 };
 use solana_trader_proto::api;
 use test_case::test_case;
@@ -89,6 +88,31 @@ async fn test_get_rate_limit_grpc(
     );
 
     assert_ne!(response.tier, "", "Expected a valid account tier");
+
+    Ok(())
+}
+#[test_case(
+    SAMPLE_OWNER_ADDR
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_account_balance_v2_grpc(
+    owner_addr: &str,
+) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let request = api::GetAccountBalanceRequest {owner_address: owner_addr.to_string()};
+
+    let response = client.get_account_balance_v2(&request).await?;
+    println!(
+        "GetAccountBalanceV2 Response: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+
+    assert!(
+        response.tokens.len() > 0,
+        "Expected at least one token account"
+    );
 
     Ok(())
 }

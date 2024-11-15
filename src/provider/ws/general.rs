@@ -1,5 +1,5 @@
 use solana_trader_proto::api;
-use solana_trader_proto::api::{GetRecentBlockHashRequest, GetRecentBlockHashRequestV2, GetTransactionRequest};
+use solana_trader_proto::api::{GetAccountBalanceRequest, GetRateLimitRequest, GetRecentBlockHashRequest, GetRecentBlockHashRequestV2, GetTransactionRequest};
 use crate::provider::ws::WebSocketClient;
 
 impl WebSocketClient {
@@ -32,4 +32,24 @@ impl WebSocketClient {
 
         self.conn.request("GetRecentBlockHashV2", params).await
     }
+    pub async fn get_rate_limit(
+        &self,
+        request: GetRateLimitRequest,
+    ) -> anyhow::Result<api::GetRateLimitResponse> {
+        let params = serde_json::to_value(request)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
+
+        self.conn.request("GetRateLimit", params).await
+    }
+
+    pub async fn get_account_balance_v2(
+        &self,
+        request: GetAccountBalanceRequest,
+    ) -> anyhow::Result<api::GetAccountBalanceResponse> {
+        let params = serde_json::to_value(request)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
+
+        self.conn.request("GetAccountBalanceV2", params).await
+    }
+
 }
