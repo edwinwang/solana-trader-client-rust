@@ -4,6 +4,7 @@ use bincode::{deserialize, serialize};
 use serde::Serialize;
 use solana_sdk::{
     message::VersionedMessage,
+    pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
     transaction::{Transaction, VersionedTransaction},
@@ -19,6 +20,8 @@ pub struct SubmitParams {
     pub use_staked_rpcs: bool,
     pub fast_best_effort: bool,
     pub submit_strategy: api::SubmitStrategy,
+    pub allow_bank_run: bool,
+    pub revenue_address: Pubkey,
 }
 
 impl Default for SubmitParams {
@@ -29,6 +32,8 @@ impl Default for SubmitParams {
             use_staked_rpcs: true,
             fast_best_effort: false,
             submit_strategy: api::SubmitStrategy::PSubmitAll,
+            allow_bank_run: false,
+            revenue_address: Pubkey::default(),
         }
     }
 }

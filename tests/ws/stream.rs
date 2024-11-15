@@ -1,6 +1,9 @@
 use anyhow::Result;
 use futures_util::StreamExt;
-use solana_trader_client_rust::{common::constants::{MAINNET_PUMP_NY, WRAPPED_SOL}, provider::ws::WebSocketClient};
+use solana_trader_client_rust::{
+    common::constants::{MAINNET_PUMP_NY, WRAPPED_SOL},
+    provider::ws::WebSocketClient,
+};
 use solana_trader_proto::api;
 use test_case::test_case;
 
