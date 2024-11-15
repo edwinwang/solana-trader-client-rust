@@ -1,6 +1,6 @@
 use anyhow::Result;
 use futures_util::StreamExt;
-use solana_trader_client_rust::{common::constants::WRAPPED_SOL, provider::ws::WebSocketClient};
+use solana_trader_client_rust::{common::constants::{MAINNET_PUMP_NY, WRAPPED_SOL}, provider::ws::WebSocketClient};
 use solana_trader_proto::api;
 use test_case::test_case;
 
@@ -331,7 +331,7 @@ async fn test_bundle_tip_stream_ws(expected_responses: usize) -> Result<()> {
 #[tokio::test]
 #[ignore]
 async fn test_pump_fun_new_tokens_stream_ws(expected_responses: usize) -> Result<()> {
-    let ws = WebSocketClient::new(None).await?;
+    let ws = WebSocketClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
     let mut stream = ws.get_pump_fun_new_tokens_stream().await?;
 
     let mut last_mint = String::new();
@@ -357,7 +357,7 @@ async fn test_pump_fun_new_tokens_stream_ws(expected_responses: usize) -> Result
 #[tokio::test]
 #[ignore]
 async fn test_pump_fun_tokens_and_swaps_integration_ws() -> Result<()> {
-    let ws = WebSocketClient::new(None).await?;
+    let ws = WebSocketClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
 
     let mut tokens_stream = ws.get_pump_fun_new_tokens_stream().await?;
     let new_token = tokens_stream

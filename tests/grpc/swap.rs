@@ -1,15 +1,13 @@
 use anyhow::Result;
-use dotenv::dotenv;
 use solana_trader_client_rust::{
     common::{
-        constants::{USDC, WRAPPED_SOL},
+        constants::{MAINNET_PUMP_NY, USDC, WRAPPED_SOL},
         signing::SubmitParams,
     },
     provider::grpc::GrpcClient,
 };
 use solana_trader_proto::api;
 use solana_trader_proto::common::Fee;
-use std::env;
 use test_case::test_case;
 
 #[test_case(
@@ -479,11 +477,9 @@ async fn test_jupiter_swap_instructions_grpc(
 #[tokio::test]
 #[ignore]
 async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
-    dotenv().ok();
     let bonding_curve_address = "Fh8fnZUVEpPStJ2hKFNNjMAyuyvoJLMouENawg4DYCBc";
     let mint_address = "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump";
-    env::set_var("NETWORK", "MAINNET_PUMP");
-    let mut client = GrpcClient::new(None).await?;
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
 
     let request = api::GetPumpFunQuotesRequest {
         quote_type: "buy".to_string(),
