@@ -124,8 +124,8 @@ impl GrpcClient {
                 use_staked_rp_cs: Some(submit_opts.use_staked_rpcs),
                 fast_best_effort: Some(submit_opts.fast_best_effort),
                 tip: None,
-                allow_back_run: Some(submit_opts.allow_bank_run),
-                revenue_address: Some(submit_opts.revenue_address.to_string()),
+                allow_back_run: submit_opts.allow_bank_run,
+                revenue_address: submit_opts.revenue_address,
             };
 
             let signature = self
