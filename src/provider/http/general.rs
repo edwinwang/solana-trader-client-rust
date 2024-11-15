@@ -1,0 +1,75 @@
+use anyhow::anyhow;
+use solana_trader_proto::api;
+use crate::provider::http::HTTPClient;
+use crate::provider::utils::convert_string_enums;
+
+impl HTTPClient {
+    pub async fn get_transaction(
+        &self,
+        request: &api::GetTransactionRequest,
+    ) -> anyhow::Result<api::GetTransactionResponse> {
+        let url = format!(
+            "{}/api/v2/transaction?signature={}",
+            self.base_url, request.signature
+        );
+
+        println!("{}", url);
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        let response_text = response.text().await?;
+
+        let mut value: serde_json::Value = serde_json::from_str(&response_text)
+            .map_err(|e| anyhow::anyhow!("Failed to parse response as JSON: {}", e))?;
+
+        convert_string_enums(&mut value);
+
+        serde_json::from_value(value)
+            .map_err(|e| anyhow::anyhow!("Failed to parse response into GetTransactionResponse: {}", e))
+    }
+    pub async fn get_recent_block_hash(
+        &self,
+    ) -> anyhow::Result<api::GetRecentBlockHashResponse> {
+        let url = format!(
+            "{}/api/v1/system/blockhash",
+            self.base_url
+        );
+
+        println!("{}", url);
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn get_recent_block_hash_v2(
+        &self,
+        request: &api::GetRecentBlockHashRequestV2,
+    ) -> anyhow::Result<api::GetRecentBlockHashRequestV2> {
+        let url = format!(
+            "{}/api/v2/system/blockhash?offset={}",
+            self.base_url, request.offset
+        );
+
+        println!("{}", url);
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+}

@@ -88,3 +88,25 @@ Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and 
     ],
 }
 ```
+
+## Troubleshooting Guide
+Issues related to dependency management / fetching external git respoitories
+
+```
+ Updating git repository `https://github.com/anza-xyz/curve25519-dalek.git`
+error: failed to load source for dependency `curve25519-dalek`
+
+Caused by:
+  Unable to update https://github.com/anza-xyz/curve25519-dalek.git?rev=b500cdc2a920cd5bff9e2dd974d7b97349d61464
+```
+
+This is most likely an issue with your `/.ssh/config`
+The following commands with `ssh-agent` may help: 
+
+```
+eval `ssh-agent -s`
+ssh-add
+cargo build
+```
+
+
