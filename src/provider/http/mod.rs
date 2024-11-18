@@ -1,5 +1,6 @@
 pub mod quote;
 pub mod swap;
+pub mod general;
 
 use anyhow::{anyhow, Result};
 use reqwest::{

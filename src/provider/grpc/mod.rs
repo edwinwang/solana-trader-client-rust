@@ -1,6 +1,7 @@
 pub mod quote;
 pub mod stream;
 pub mod swap;
+pub mod general;
 
 use anyhow::Result;
 use rustls::crypto::ring::default_provider;
@@ -11,14 +12,14 @@ use std::collections::HashMap;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
 use tonic::{
-    metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel, Response,
+    metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel,
 };
 
 use crate::common::signing::{get_keypair, sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig};
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::{
-    GetRecentBlockHashRequestV2, GetRecentBlockHashResponseV2, PostSubmitRequest,
+    GetRecentBlockHashRequestV2, PostSubmitRequest,
     TransactionMessage,
 };
 
@@ -95,12 +96,6 @@ impl GrpcClient {
             public_key: base.public_key,
             keypair: base.keypair,
         })
-    }
-    pub async fn get_recent_block_hash_v2(
-        &mut self,
-        req: GetRecentBlockHashRequestV2,
-    ) -> Response<GetRecentBlockHashResponseV2> {
-        self.client.get_recent_block_hash_v2(req).await.unwrap()
     }
 
     pub async fn sign_and_submit<T: IntoTransactionMessage + Clone>(
