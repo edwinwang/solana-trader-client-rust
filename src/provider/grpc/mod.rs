@@ -97,12 +97,6 @@ impl GrpcClient {
             keypair: base.keypair,
         })
     }
-    pub async fn get_recent_block_hash_v2(
-        &mut self,
-        req: GetRecentBlockHashRequestV2,
-    ) -> Response<GetRecentBlockHashResponseV2> {
-        self.client.get_recent_block_hash_v2(req).await.unwrap()
-    }
 
     pub async fn sign_and_submit<T: IntoTransactionMessage + Clone>(
         &mut self,
