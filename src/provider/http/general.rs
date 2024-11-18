@@ -2,7 +2,6 @@ use anyhow::anyhow;
 use solana_trader_proto::api;
 use solana_trader_proto::api::GetAccountBalanceRequest;
 use crate::provider::http::HTTPClient;
-use crate::provider::utils::convert_string_enums;
 
 impl HTTPClient {
     pub async fn get_transaction(
