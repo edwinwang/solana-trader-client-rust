@@ -72,6 +72,7 @@ If you want to see output from a given test, add the `nocapture` flag:
 cargo test test_raydium_quotes_grpc -- --ignored --nocapture
 ```
 
+run `cargo clippy --tests` after adding your tests, to resolve any potential issues 
 
 ## Adding new test cases
 Using the `test_case` crate tests are parametrized:

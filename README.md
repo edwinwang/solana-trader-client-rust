@@ -74,5 +74,3 @@ let response = ws_client.get_raydium_quotes(&request).await?;
 ```
 
 Please refer to the `tests` directory for more examples.
-
-run `cargo clippy --tests` after adding your tests, to resolve any potential issues 
