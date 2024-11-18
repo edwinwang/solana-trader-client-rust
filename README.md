@@ -19,9 +19,9 @@ solana-trader-client-rust = "0.1.0"
 
 The SDK provides access to Solana Trader API through:
 
-gRPC: High-performance RPC calls
-HTTP: Simple REST requests
-WebSocket: Real-time streaming data
+- gRPC: High-performance RPC calls
+- HTTP: Simple REST requests
+- WebSocket: Real-time streaming data
 
 
 ### Client Initialization
