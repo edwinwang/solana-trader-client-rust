@@ -10,10 +10,10 @@ This SDK is designed to make it easy for you to use the bloXroute Labs API in Ru
 
 or
 
-## Usage
-
 [dependencies]
 solana-trader-client-rust = "0.1.0"
+
+## Usage
 
 The SDK provides access to Solana Trader API through:
 
