@@ -59,7 +59,7 @@ async fn test_get_recent_block_hash_v2_ws() -> Result<()> {
     for offset in 0..5 {
         let request = api::GetRecentBlockHashRequestV2 { offset };
 
-        let response = client.get_recent_block_hash_v2(request).await?;
+        let response = client.get_recent_block_hash_v2(&request).await?;
         println!(
             "GetRecentBlockHashV2 Response for offset {}: {}",
             offset,

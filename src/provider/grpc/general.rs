@@ -25,7 +25,7 @@ impl GrpcClient {
     ) -> Result<api::GetRecentBlockHashResponse> {
         let response = self
             .client
-            .get_recent_block_hash(Request::new(request.clone()))
+            .get_recent_block_hash(Request::new(*request))
             .await
             .map_err(|e| anyhow::anyhow!("GetRecentBlockHash error: {}", e))?;
 
@@ -38,7 +38,7 @@ impl GrpcClient {
     ) -> Result<api::GetRecentBlockHashResponseV2> {
         let response = self
             .client
-            .get_recent_block_hash_v2(Request::new(request.clone()))
+            .get_recent_block_hash_v2(Request::new(request))
             .await
             .map_err(|e| anyhow::anyhow!("GetRecentBlockHashV2 error: {}", e))?;
 
@@ -51,7 +51,7 @@ impl GrpcClient {
     ) -> Result<api::GetRateLimitResponse> {
         let response = self
             .client
-            .get_rate_limit(Request::new(request.clone()))
+            .get_rate_limit(Request::new(*request))
             .await
             .map_err(|e| anyhow::anyhow!("GetRateLimit error: {}", e))?;
 
