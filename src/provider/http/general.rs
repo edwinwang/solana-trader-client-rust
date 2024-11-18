@@ -25,13 +25,24 @@ impl HTTPClient {
 
         let response_text = response.text().await?;
 
-        let mut value: serde_json::Value = serde_json::from_str(&response_text)
-            .map_err(|e| anyhow::anyhow!("Failed to parse response as JSON: {}", e))?;
+        println!("{}", response_text);
 
-        convert_string_enums(&mut value);
+        // let mut value: serde_json::Value = serde_json::from_str(&response_text)
+        //     .map_err(|e| anyhow::anyhow!("Failed to parse response as JSON: {}", e))?;
+        //
+        // convert_string_enums(&mut value);
+        //
+        // serde_json::from_value(value)
+        //     .map_err(|e| anyhow::anyhow!("Failed to parse response into GetTransactionResponse: {}", e))
 
-        serde_json::from_value(value)
-            .map_err(|e| anyhow::anyhow!("Failed to parse response into GetTransactionResponse: {}", e))
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
     }
     pub async fn get_recent_block_hash(
         &self,
@@ -97,7 +108,7 @@ impl HTTPClient {
     pub async fn get_account_balance_v2(
         &self,
         request: GetAccountBalanceRequest,
-    ) -> anyhow::Result<api::GetAccountBalanceRequest> {
+    ) -> anyhow::Result<api::GetAccountBalanceResponse> {
 
         println!("here1");
 

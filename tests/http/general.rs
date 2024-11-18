@@ -27,8 +27,6 @@ async fn test_get_transaction_http(
         serde_json::to_string_pretty(&response)?
     );
 
-    println!("her2");
-
     // let num: u64 = response.slot.parse().expect("Failed to parse string to u64");
 
     assert!(
@@ -113,7 +111,7 @@ async fn test_get_account_balance_v2_http(
     );
 
     assert!(
-        response.owner_address.len() > 0,
+        response.tokens.len() > 0,
         "Expected at least one token account"
     );
 
