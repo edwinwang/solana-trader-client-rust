@@ -62,11 +62,15 @@ impl Interceptor for AuthInterceptor {
 #[derive(Debug)]
 pub struct GrpcClient {
     client: api::api_client::ApiClient<InterceptedService<Channel, AuthInterceptor>>,
-    pub keypair: Option<Keypair>,
+    keypair: Option<Keypair>,
     pub public_key: Option<Pubkey>,
 }
 
 impl GrpcClient {
+    pub fn get_keypair(&self) -> Result<&Keypair> {
+        Ok(self.keypair.as_ref().unwrap())
+    }
+
     pub async fn new(endpoint: Option<String>) -> Result<Self> {
         let base = BaseConfig::try_from_env()?;
         let (default_base_url, secure) = get_base_url_from_env();

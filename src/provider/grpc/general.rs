@@ -94,9 +94,7 @@ impl GrpcClient {
         &mut self,
         owner_address: String,
     ) -> Result<api::GetTokenAccountsResponse> {
-        let request = Request::new(api::GetTokenAccountsRequest {
-            owner_address: owner_address
-        });
+        let request = Request::new(api::GetTokenAccountsRequest { owner_address });
 
         let response = self
             .client
@@ -111,9 +109,7 @@ impl GrpcClient {
         &mut self,
         owner_address: String,
     ) -> Result<api::GetAccountBalanceResponse> {
-        let request = Request::new(api::GetAccountBalanceRequest {
-            owner_address
-        });
+        let request = Request::new(api::GetAccountBalanceRequest { owner_address });
 
         let response = self
             .client
@@ -122,5 +118,5 @@ impl GrpcClient {
             .map_err(|e| anyhow::anyhow!("GetAccountBalance error: {}", e))?;
 
         Ok(response.into_inner())
-    }    
+    }
 }
