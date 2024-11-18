@@ -1,7 +1,7 @@
 pub mod quote;
 pub mod stream;
 pub mod swap;
-mod general;
+pub mod general;
 
 use anyhow::{anyhow, Result};
 use serde_json::json;

@@ -11,6 +11,7 @@ use solana_trader_client_rust::common::signing::SubmitParams;
 use solana_trader_client_rust::provider::grpc::GrpcClient;
 use solana_trader_proto::api::{GetRecentBlockHashRequestV2, TransactionMessage};
 use std::str::FromStr;
+use solana_hash::Hash;
 
 #[tokio::test]
 #[ignore]
@@ -44,7 +45,7 @@ async fn test_add_memo_to_tx() -> anyhow::Result<()> {
         ],
         Some(&client.public_key.unwrap()),
         &[&keypair],
-        block_hash.get_ref().block_hash.parse()?,
+        Hash::from_str(&*block_hash?.block_hash).unwrap(),
     );
 
     // we have a simple transaction now, we sign it and serialize it

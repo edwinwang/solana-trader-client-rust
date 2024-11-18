@@ -1,5 +1,6 @@
 use anyhow::Result;
 use solana_trader_proto::api;
+use solana_trader_proto::api::GetRecentBlockHashRequestV2;
 use tonic::Request;
 
 use super::GrpcClient;
@@ -33,7 +34,7 @@ impl GrpcClient {
 
     pub async fn get_recent_block_hash_v2(
         &mut self,
-        request: &api::GetRecentBlockHashRequestV2,
+        request: GetRecentBlockHashRequestV2,
     ) -> Result<api::GetRecentBlockHashResponseV2> {
         let response = self
             .client
@@ -43,6 +44,7 @@ impl GrpcClient {
 
         Ok(response.into_inner())
     }
+
 
     pub async fn get_rate_limit(
         &mut self,

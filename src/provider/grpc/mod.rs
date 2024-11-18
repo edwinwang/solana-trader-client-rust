@@ -1,7 +1,7 @@
 pub mod quote;
 pub mod stream;
 pub mod swap;
-mod general;
+pub mod general;
 
 use anyhow::Result;
 use rustls::crypto::ring::default_provider;
@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
 use tonic::{
-    metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel, Response,
+    metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel,
 };
 
 use crate::common::signing::{get_keypair, sign_transaction, SubmitParams};
