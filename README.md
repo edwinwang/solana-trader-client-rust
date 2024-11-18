@@ -1,25 +1,30 @@
-# solana-trader-client-rust
+# Solana Trader Rust SDK
 
-# Environment setup
-set the necessary environment variables:
+## Objective
 
-```bash
-export AUTH_HEADER=<YOUR_AUTH_HEADER>
-export NETWORK=<TARGET_NETWORK>
-export REGION=<TARGET_REGION>
-```
+This SDK is designed to make it easy for you to use the bloXroute Labs API in Rust. 
 
-**Available networks:**
-- MAINNET
-- MAINNET_PUMP
-- TESTNET
-- LOCAL
+## Installation
 
-**Available regions:**
-- NY
-- UK
+``cargo add solana-trader-client-rust``
 
-You can also save these constants to a .env file like so:
+or
+
+## Usage
+
+[dependencies]
+solana-trader-client-rust = "0.1.0"
+
+The SDK provides access to Solana Trader API through:
+
+gRPC: High-performance RPC calls
+HTTP: Simple REST requests
+WebSocket: Real-time streaming data
+
+
+### Client Initialization
+
+Refer to **SETUP.md** for available networks, create and populate your `.env` file with something like this:
 
 ```bash
 PUBLIC_KEY="...."
@@ -29,56 +34,42 @@ NETWORK=MAINNET
 REGION=NY
 ```
 
-### Vscode 
-Tests can also be ran/debugged on click with vscode. 
-Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and fill in the auth key:
-
-```json
-{
-    "rust-analyzer.runnables.extraEnv": {
-        "PRIVATE_KEY": "...",
-        "PUBLIC_KEY": "...",
-        "AUTH_HEADER": "...",
-        "NETWORK": "MAINNET",
-    },
-    "rust-analyzer.runnables.extraArgs": [
-        "--",
-        "--ignored",
-        "--nocapture"
-    ],
-}
-```
-
-**If no region is defined, the SDK will use default to LOCAL**
-
-# Running tests
-
-Since these tests are networked, they have the ignore flag on by default:
 
 ```rust
-    #[tokio::test]
-    #[ignore]
+use solana_trader_client_rust::provider::{
+    grpc::GrpcClient, 
+    http::HTTPClient,
+    ws::WebSocketClient
+};
+
+// GRPC
+let grpc_client = GrpcClient::new(None).await?;
+
+// HTTP 
+let http_client = HTTPClient::new(None)?;
+
+// WebSocket
+let ws_client = WebSocketClient::new(None).await?;
 ```
 
-So each test must be called individually:
-
-```bash
-cargo test test_raydium_quotes_grpc -- --ignored 
-```
-
-If you want to see output from a given test, add the `nocapture` flag:
-
-```bash
-cargo test test_raydium_quotes_grpc -- --ignored --nocapture
-```
-
-
-## Adding new test cases
-Using the `test_case` crate tests are parametrized:
+A simple example:
 
 ```rust
-// old test
-#[test_case("BTC", "USDC", 0.1, 0.1 ; "BTC to USDC with 0.1% slippage")]
-// new test case
-#[test_case("BTC", "USDC", 0.1, 10 ; "BTC to USDC with 10% slippage")]
+let request = api::GetRaydiumQuotesRequest {
+    in_token: WRAPPED_SOL.to_string(),
+    out_token: USDC.to_string(), 
+    in_amount: 0.1,
+    slippage: 0.2,
+};
+
+// Using GRPC
+let response = grpc_client.get_raydium_quotes(&request).await?;
+
+// Using HTTP
+let response = http_client.get_raydium_quotes(&request).await?;
+
+// Using WebSocket
+let response = ws_client.get_raydium_quotes(&request).await?;
 ```
+
+Please refer to the `tests` directory for more examples.
