@@ -15,7 +15,7 @@ use tonic::{
     metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel,
 };
 
-use crate::common::signing::{get_keypair, sign_transaction, SubmitParams};
+use crate::common::signing::{sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig};
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::{
@@ -107,14 +107,14 @@ impl GrpcClient {
         submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
-        let keypair = get_keypair(&self.keypair)?;
-
         let block_hash = self
             .client
             .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
             .await?
             .into_inner()
             .block_hash;
+
+        let keypair = self.get_keypair()?;
 
         if txs.len() == 1 {
             let signed_tx = sign_transaction(&txs[0], keypair, block_hash).await?;

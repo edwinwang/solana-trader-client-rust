@@ -1,5 +1,5 @@
 use crate::{
-    common::signing::{get_keypair, SubmitParams},
+    common::signing::SubmitParams,
     provider::utils::{
         convert_address_lookup_table, convert_jupiter_instructions, convert_raydium_instructions,
         create_transaction_message,
@@ -182,7 +182,7 @@ impl HTTPClient {
         submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
-        let keypair = get_keypair(&self.keypair)?;
+        let keypair = self.get_keypair()?;
 
         let swap_instructions = self.post_jupiter_swap_instructions(&request).await?;
 

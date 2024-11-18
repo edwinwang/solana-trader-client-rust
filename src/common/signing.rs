@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use bincode::{deserialize, serialize};
 use serde::Serialize;
@@ -95,10 +95,4 @@ fn sign_legacy_transaction(
     let mut tx: Transaction = deserialize(rawbytes)?;
     tx.try_partial_sign(&[keypair], blockhash)?;
     Ok(serialize(&tx)?)
-}
-
-pub fn get_keypair(keypair: &Option<Keypair>) -> Result<&Keypair> {
-    keypair
-        .as_ref()
-        .ok_or_else(|| anyhow!("No keypair available for signing"))
 }
