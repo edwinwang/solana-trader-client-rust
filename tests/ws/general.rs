@@ -104,7 +104,7 @@ async fn test_get_account_balance_v2_ws(owner_addr: &str) -> Result<()> {
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.tokens.len() > 0,
+        !response.tokens.is_empty(),
         "Expected at least one token account"
     );
     Ok(())
@@ -114,20 +114,17 @@ async fn test_get_account_balance_v2_ws(owner_addr: &str) -> Result<()> {
 #[test_case(api::Project::PRaydium, None; "Raydium get priority fee - via ws")]
 #[tokio::test]
 #[ignore]
-async fn test_get_priority_fee_ws(
-    project: api::Project,
-    percentile: Option<f64>,
-) -> Result<()> {
+async fn test_get_priority_fee_ws(project: api::Project, percentile: Option<f64>) -> Result<()> {
     let client = WebSocketClient::new(None).await?;
 
-    let response = timeout(Duration::from_secs(10), client.get_priority_fee(project, percentile))
-        .await
-        .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+    let response = timeout(
+        Duration::from_secs(10),
+        client.get_priority_fee(project, percentile),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
 
-    println!(
-        "priority fee: {}",
-        serde_json::to_string_pretty(&response)?
-    );
+    println!("priority fee: {}", serde_json::to_string_pretty(&response)?);
 
     client.close().await?;
     Ok(())
@@ -136,14 +133,15 @@ async fn test_get_priority_fee_ws(
 #[test_case(SAMPLE_OWNER_ADDR; "get token accounts - via ws")]
 #[tokio::test]
 #[ignore]
-async fn test_get_token_accounts_ws(
-    owner_address: &str,
-) -> Result<()> {
+async fn test_get_token_accounts_ws(owner_address: &str) -> Result<()> {
     let client = WebSocketClient::new(None).await?;
 
-    let response = timeout(Duration::from_secs(10), client.get_token_accounts(owner_address.to_string()))
-        .await
-        .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+    let response = timeout(
+        Duration::from_secs(10),
+        client.get_token_accounts(owner_address.to_string()),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
 
     println!(
         "token accounts: {}",
@@ -157,14 +155,15 @@ async fn test_get_token_accounts_ws(
 #[test_case(SAMPLE_OWNER_ADDR; "get account balance - via ws")]
 #[tokio::test]
 #[ignore]
-async fn test_get_account_balance_ws(
-    owner_address: &str,
-) -> Result<()> {
+async fn test_get_account_balance_ws(owner_address: &str) -> Result<()> {
     let client = WebSocketClient::new(None).await?;
 
-    let response = timeout(Duration::from_secs(10), client.get_account_balance(owner_address.to_string()))
-        .await
-        .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+    let response = timeout(
+        Duration::from_secs(10),
+        client.get_account_balance(owner_address.to_string()),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
 
     println!(
         "account balance: {}",

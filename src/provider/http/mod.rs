@@ -15,7 +15,7 @@ use solana_trader_proto::api::GetRecentBlockHashResponseV2;
 use crate::{
     common::{
         get_base_url_from_env, http_endpoint,
-        signing::{get_keypair, sign_transaction, SubmitParams},
+        signing::{sign_transaction, SubmitParams},
         BaseConfig,
     },
     provider::utils::convert_string_enums,
@@ -24,13 +24,17 @@ use crate::{
 use super::utils::IntoTransactionMessage;
 
 pub struct HTTPClient {
-    pub client: Client,
+    client: Client,
     base_url: String,
-    pub keypair: Option<Keypair>,
+    keypair: Option<Keypair>,
     pub public_key: Option<Pubkey>,
 }
 
 impl HTTPClient {
+    pub fn get_keypair(&self) -> Result<&Keypair> {
+        Ok(self.keypair.as_ref().unwrap())
+    }
+
     pub fn new(endpoint: Option<String>) -> Result<Self> {
         let base = BaseConfig::try_from_env()?;
         let (default_base_url, secure) = get_base_url_from_env();
@@ -92,7 +96,7 @@ impl HTTPClient {
         submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
-        let keypair = get_keypair(&self.keypair)?;
+        let keypair = self.get_keypair()?;
 
         // TODO: refactor once this endpoint is defined
         let response = self

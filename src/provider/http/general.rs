@@ -1,5 +1,5 @@
-use anyhow::{anyhow, Result};
 use crate::provider::http::HTTPClient;
+use anyhow::{anyhow, Result};
 use solana_trader_proto::api;
 use solana_trader_proto::api::GetAccountBalanceRequest;
 
@@ -119,15 +119,16 @@ impl HTTPClient {
         &self,
         project: api::Project,
         percentile: Option<f64>,
-   ) -> Result<api::GetPriorityFeeResponse> {
+    ) -> Result<api::GetPriorityFeeResponse> {
         let mut url = format!(
             "{}/api/v2/system/priority-fee?project={}",
-            self.base_url, project as i32);
+            self.base_url, project as i32
+        );
         if let Some(p) = percentile {
             url = format!(
                 "{}/api/v2/system/priority-fee?project={}&percentile={}",
-                self.base_url, project as i32, p);
-            
+                self.base_url, project as i32, p
+            );
         }
 
         let response = self
@@ -143,10 +144,11 @@ impl HTTPClient {
     pub async fn get_token_accounts(
         &self,
         owner_address: String,
-   ) -> Result<api::GetTokenAccountsResponse> {
+    ) -> Result<api::GetTokenAccountsResponse> {
         let url = format!(
             "{}/api/v1/account/token-accounts?ownerAddress={}",
-            self.base_url, owner_address);
+            self.base_url, owner_address
+        );
 
         let response = self
             .client

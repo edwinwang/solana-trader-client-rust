@@ -24,6 +24,7 @@ async fn test_add_memo_to_tx_http() -> anyhow::Result<()> {
     let lamports_to_transfer = 1_000_000;
 
     let pubkey = client.public_key.unwrap();
+    let keypair = client.get_keypair()?;
     let jito_tip_wallet = Pubkey::from_str(JITO_TIP_WALLET)?;
 
     let block_hash = client
@@ -43,13 +44,13 @@ async fn test_add_memo_to_tx_http() -> anyhow::Result<()> {
             build_memo_instruction(),
         ],
         Some(&pubkey),
-        &[client.keypair.as_ref().unwrap()],
+        &[keypair],
         block_hash,
     );
 
     let message_data = transaction.message.serialize();
     transaction.signatures = vec![Signature::default()];
-    transaction.signatures[0] = client.keypair.as_ref().unwrap().sign_message(&message_data);
+    transaction.signatures[0] = keypair.sign_message(&message_data);
 
     let serialized_tx = bincode::serialize(&transaction)?;
     let messages = vec![TransactionMessage {
@@ -69,7 +70,8 @@ async fn test_add_memo_to_serialized_tx_http() -> anyhow::Result<()> {
     let client = HTTPClient::new(None)?;
     let lamports_to_transfer = 2000;
 
-    let pubkey = client.keypair.as_ref().unwrap().pubkey();
+    let pubkey = client.public_key.unwrap();
+    let keypair = client.get_keypair()?;
     let client_pubkey = client.public_key.unwrap();
 
     let transfer_instruction =
@@ -78,7 +80,7 @@ async fn test_add_memo_to_serialized_tx_http() -> anyhow::Result<()> {
 
     let message_data = transaction.message.serialize();
     transaction.signatures = vec![Signature::default()];
-    transaction.signatures[0] = client.keypair.as_ref().unwrap().sign_message(&message_data);
+    transaction.signatures[0] = keypair.sign_message(&message_data);
 
     let serialized_tx = bincode::serialize(&transaction)?;
     let mut deserialized_tx: VersionedTransaction = bincode::deserialize(&serialized_tx)?;

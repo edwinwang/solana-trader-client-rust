@@ -1,7 +1,10 @@
+use crate::provider::ws::WebSocketClient;
 use anyhow::Result;
 use solana_trader_proto::api;
-use solana_trader_proto::api::{GetAccountBalanceRequest, GetRateLimitRequest, GetRecentBlockHashRequest, GetRecentBlockHashRequestV2, GetTransactionRequest};
-use crate::provider::ws::WebSocketClient;
+use solana_trader_proto::api::{
+    GetAccountBalanceRequest, GetRateLimitRequest, GetRecentBlockHashRequest,
+    GetRecentBlockHashRequestV2, GetTransactionRequest,
+};
 
 impl WebSocketClient {
     pub async fn get_transaction(
@@ -73,9 +76,7 @@ impl WebSocketClient {
         &self,
         owner_address: String,
     ) -> Result<api::GetTokenAccountsResponse> {
-        let request = api::GetTokenAccountsRequest {
-            owner_address
-        };
+        let request = api::GetTokenAccountsRequest { owner_address };
 
         let params = serde_json::to_value(request)
             .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
@@ -87,9 +88,7 @@ impl WebSocketClient {
         &self,
         owner_address: String,
     ) -> Result<api::GetAccountBalanceResponse> {
-        let request = api::GetAccountBalanceRequest {
-            owner_address
-        };
+        let request = api::GetAccountBalanceRequest { owner_address };
 
         let params = serde_json::to_value(request)
             .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;

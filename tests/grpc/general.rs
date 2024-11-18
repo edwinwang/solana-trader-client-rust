@@ -98,7 +98,7 @@ async fn test_get_account_balance_v2_grpc(owner_addr: &str) -> Result<()> {
     );
 
     assert!(
-        response.tokens.len() > 0,
+        !response.tokens.is_empty(),
         "Expected at least one token account"
     );
 
@@ -109,28 +109,19 @@ async fn test_get_account_balance_v2_grpc(owner_addr: &str) -> Result<()> {
 #[test_case(api::Project::PRaydium, None; "Raydium get priority fee - via grpc")]
 #[tokio::test]
 #[ignore]
-async fn test_get_priority_fee_grpc(
-    project: api::Project,
-    percentile: Option<f64>,
-) -> Result<()> {
+async fn test_get_priority_fee_grpc(project: api::Project, percentile: Option<f64>) -> Result<()> {
     let mut client = GrpcClient::new(None).await?;
 
     let response = client.get_priority_fee(project, percentile).await?;
-    println!(
-        "priority fee: {}",
-        serde_json::to_string_pretty(&response)?
-    );
-    
+    println!("priority fee: {}", serde_json::to_string_pretty(&response)?);
+
     Ok(())
 }
 
-    
 #[test_case(SAMPLE_OWNER_ADDR; "get token accounts - via grpc")]
 #[tokio::test]
 #[ignore]
-async fn test_get_token_accounts(
-    owner_address: &str,
-) -> Result<()> {
+async fn test_get_token_accounts(owner_address: &str) -> Result<()> {
     let mut client = GrpcClient::new(None).await?;
 
     let response = client.get_token_accounts(owner_address.to_string()).await?;
@@ -138,23 +129,23 @@ async fn test_get_token_accounts(
         "token accounts: {}",
         serde_json::to_string_pretty(&response)?
     );
-    
+
     Ok(())
 }
 
 #[test_case(SAMPLE_OWNER_ADDR; "get account balance - via grpc")]
 #[tokio::test]
 #[ignore]
-async fn test_get_account_balance_grpc(
-    owner_address: &str,
-) -> Result<()> {
+async fn test_get_account_balance_grpc(owner_address: &str) -> Result<()> {
     let mut client = GrpcClient::new(None).await?;
 
-    let response = client.get_account_balance(owner_address.to_string()).await?;
+    let response = client
+        .get_account_balance(owner_address.to_string())
+        .await?;
     println!(
         "account balance: {}",
         serde_json::to_string_pretty(&response)?
     );
-    
+
     Ok(())
 }

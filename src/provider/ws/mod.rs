@@ -9,7 +9,7 @@ use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::GetRecentBlockHashResponseV2;
 
-use crate::common::signing::{get_keypair, sign_transaction, SubmitParams};
+use crate::common::signing::{sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, ws_endpoint, BaseConfig};
 use crate::connections::ws::WS;
 
@@ -25,11 +25,15 @@ pub struct WebSocketConfig {
 
 pub struct WebSocketClient {
     conn: WS,
-    pub keypair: Option<Keypair>,
+    keypair: Option<Keypair>,
     pub public_key: Option<Pubkey>,
 }
 
 impl WebSocketClient {
+    pub fn get_keypair(&self) -> Result<&Keypair> {
+        Ok(self.keypair.as_ref().unwrap())
+    }
+
     pub async fn new(endpoint: Option<String>) -> Result<Self> {
         let base = BaseConfig::try_from_env()?;
         let (default_base_url, secure) = get_base_url_from_env();
@@ -61,7 +65,7 @@ impl WebSocketClient {
         submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
-        let keypair = get_keypair(&self.keypair)?;
+        let keypair = self.get_keypair()?;
 
         let hash_res: GetRecentBlockHashResponseV2 =
             self.conn.request("GetRecentBlockHashV2", json!({})).await?;

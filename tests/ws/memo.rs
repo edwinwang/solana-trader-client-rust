@@ -24,6 +24,7 @@ async fn test_add_memo_to_tx_ws() -> anyhow::Result<()> {
     let lamports_to_transfer = 1_000_000;
 
     let pubkey = client.public_key.unwrap();
+    let keypair = client.get_keypair()?;
     let jito_tip_wallet = Pubkey::from_str(JITO_TIP_WALLET)?;
 
     let block_hash = client
@@ -33,18 +34,23 @@ async fn test_add_memo_to_tx_ws() -> anyhow::Result<()> {
         .parse::<Hash>()?;
 
     let transfer_instruction = system_instruction::transfer(&pubkey, &pubkey, lamports_to_transfer);
-    let jito_tip_instruction = system_instruction::transfer(&pubkey, &jito_tip_wallet, lamports_to_transfer);
+    let jito_tip_instruction =
+        system_instruction::transfer(&pubkey, &jito_tip_wallet, lamports_to_transfer);
 
     let mut transaction = Transaction::new_signed_with_payer(
-        &[transfer_instruction, jito_tip_instruction, build_memo_instruction()],
+        &[
+            transfer_instruction,
+            jito_tip_instruction,
+            build_memo_instruction(),
+        ],
         Some(&pubkey),
-        &[client.keypair.as_ref().unwrap()],
+        &[keypair],
         block_hash,
     );
 
     let message_data = transaction.message.serialize();
     transaction.signatures = vec![Signature::default()];
-    transaction.signatures[0] = client.keypair.as_ref().unwrap().sign_message(&message_data);
+    transaction.signatures[0] = keypair.sign_message(&message_data);
 
     let serialized_tx = bincode::serialize(&transaction)?;
     let messages = vec![TransactionMessage {
@@ -66,15 +72,17 @@ async fn test_add_memo_to_serialized_tx_ws() -> anyhow::Result<()> {
     let client = WebSocketClient::new(None).await?;
     let lamports_to_transfer = 2000;
 
-    let pubkey = client.keypair.as_ref().unwrap().pubkey();
+    let pubkey = client.public_key.unwrap();
+    let keypair = client.get_keypair()?;
     let client_pubkey = client.public_key.unwrap();
 
-    let transfer_instruction = system_instruction::transfer(&pubkey, &client_pubkey, lamports_to_transfer);
+    let transfer_instruction =
+        system_instruction::transfer(&pubkey, &client_pubkey, lamports_to_transfer);
     let mut transaction = Transaction::new_with_payer(&[transfer_instruction], Some(&pubkey));
 
     let message_data = transaction.message.serialize();
     transaction.signatures = vec![Signature::default()];
-    transaction.signatures[0] = client.keypair.as_ref().unwrap().sign_message(&message_data);
+    transaction.signatures[0] = keypair.sign_message(&message_data);
 
     let serialized_tx = bincode::serialize(&transaction)?;
     let mut deserialized_tx: VersionedTransaction = bincode::deserialize(&serialized_tx)?;
@@ -83,11 +91,13 @@ async fn test_add_memo_to_serialized_tx_ws() -> anyhow::Result<()> {
         let memo_program = Pubkey::from_str(TRADER_API_MEMO_PROGRAM)?;
         message.account_keys.push(memo_program);
 
-        message.instructions.push(CompiledInstruction::new_from_raw_parts(
-            (message.account_keys.len() - 1) as u8,
-            MEMO_MESSAGE.as_bytes().to_vec(),
-            vec![],
-        ));
+        message
+            .instructions
+            .push(CompiledInstruction::new_from_raw_parts(
+                (message.account_keys.len() - 1) as u8,
+                MEMO_MESSAGE.as_bytes().to_vec(),
+                vec![],
+            ));
     }
 
     let content = bincode::serialize(&deserialized_tx)?;
