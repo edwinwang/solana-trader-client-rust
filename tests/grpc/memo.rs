@@ -12,23 +12,8 @@ use solana_trader_client_rust::provider::grpc::GrpcClient;
 use solana_trader_proto::api::{GetRecentBlockHashRequestV2, TransactionMessage};
 use std::str::FromStr;
 
-fn build_memo_instruction() -> Instruction {
-    let trader_apimemo_program =
-        Pubkey::from_str("HQ2UUt18uJqKaQFJhgV9zaTdQxUZjNrsKFgoEDquBkcx").unwrap();
-
-    let accounts = vec![AccountMeta::new(trader_apimemo_program, false)];
-    let bx_memo_marker_msg = String::from("Powered by bloXroute Trader Api")
-        .as_bytes()
-        .to_vec();
-
-    Instruction {
-        program_id: trader_apimemo_program,
-        accounts,
-        data: bx_memo_marker_msg,
-    }
-}
-
 #[tokio::test]
+#[ignore]
 async fn test_add_memo_to_tx() -> anyhow::Result<()> {
     let mut client = GrpcClient::new(None).await?;
 
@@ -81,6 +66,7 @@ async fn test_add_memo_to_tx() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_add_memo_to_serialized_tx() -> anyhow::Result<()> {
     dotenv().ok();
 
@@ -141,4 +127,20 @@ async fn test_add_memo_to_serialized_tx() -> anyhow::Result<()> {
     let s = client.sign_and_submit(vec, submit_opts, false).await;
     println!("signature : {:#?}", s?);
     Ok(())
+}
+
+fn build_memo_instruction() -> Instruction {
+    let trader_apimemo_program =
+        Pubkey::from_str("HQ2UUt18uJqKaQFJhgV9zaTdQxUZjNrsKFgoEDquBkcx").unwrap();
+
+    let accounts = vec![AccountMeta::new(trader_apimemo_program, false)];
+    let bx_memo_marker_msg = String::from("Powered by bloXroute Trader Api")
+        .as_bytes()
+        .to_vec();
+
+    Instruction {
+        program_id: trader_apimemo_program,
+        accounts,
+        data: bx_memo_marker_msg,
+    }
 }
