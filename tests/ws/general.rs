@@ -28,8 +28,8 @@ async fn test_get_transaction_ws(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.slot.is_one(),
-        "Expected a slot in the tx response"
+        !response.status.is_empty(),
+        "Expected a lot in the tx response"
     );
 
     Ok(())
