@@ -26,7 +26,9 @@ The SDK provides access to Solana Trader API through:
 
 ### Client Initialization
 
-Refer to **SETUP.md** for available networks, create and populate your `.env` file with something like this:
+Refer to **SETUP.md** for available networks, regions IDE setup and notes on testing.
+
+Create and populate your `.env` file with something like this:
 
 ```bash
 PUBLIC_KEY="...."
