@@ -61,7 +61,7 @@ impl HTTPClient {
     pub async fn get_recent_block_hash_v2(
         &self,
         request: &api::GetRecentBlockHashRequestV2,
-    ) -> anyhow::Result<api::GetRecentBlockHashRequestV2> {
+    ) -> anyhow::Result<api::GetRecentBlockHashResponseV2> {
         let url = format!(
             "{}/api/v2/system/blockhash?offset={}",
             self.base_url, request.offset

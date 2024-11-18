@@ -1,3 +1,4 @@
+// memo_ws.rs
 use base64::engine::general_purpose;
 use base64::Engine;
 use solana_hash::Hash;
@@ -8,7 +9,7 @@ use solana_sdk::signature::{Signature, Signer};
 use solana_sdk::system_instruction;
 use solana_sdk::transaction::{Transaction, VersionedTransaction};
 use solana_trader_client_rust::common::signing::SubmitParams;
-use solana_trader_client_rust::provider::grpc::GrpcClient;
+use solana_trader_client_rust::provider::ws::WebSocketClient;
 use solana_trader_proto::api::{GetRecentBlockHashRequestV2, TransactionMessage};
 use std::str::FromStr;
 
@@ -18,29 +19,24 @@ const MEMO_MESSAGE: &str = "Powered by bloXroute Trader Api";
 
 #[tokio::test]
 #[ignore]
-async fn test_add_memo_to_tx() -> anyhow::Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+async fn test_add_memo_to_tx_ws() -> anyhow::Result<()> {
+    let client = WebSocketClient::new(None).await?;
     let lamports_to_transfer = 1_000_000;
 
     let pubkey = client.public_key.unwrap();
     let jito_tip_wallet = Pubkey::from_str(JITO_TIP_WALLET)?;
 
     let block_hash = client
-        .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
+        .get_recent_block_hash_v2(&GetRecentBlockHashRequestV2 { offset: 0 })
         .await?
         .block_hash
         .parse::<Hash>()?;
 
     let transfer_instruction = system_instruction::transfer(&pubkey, &pubkey, lamports_to_transfer);
-    let jito_tip_instruction =
-        system_instruction::transfer(&pubkey, &jito_tip_wallet, lamports_to_transfer);
+    let jito_tip_instruction = system_instruction::transfer(&pubkey, &jito_tip_wallet, lamports_to_transfer);
 
     let mut transaction = Transaction::new_signed_with_payer(
-        &[
-            transfer_instruction,
-            jito_tip_instruction,
-            build_memo_instruction(),
-        ],
+        &[transfer_instruction, jito_tip_instruction, build_memo_instruction()],
         Some(&pubkey),
         &[client.keypair.as_ref().unwrap()],
         block_hash,
@@ -57,23 +53,23 @@ async fn test_add_memo_to_tx() -> anyhow::Result<()> {
     }];
 
     let submit_opts = SubmitParams::default();
-    let signature = client.sign_and_submit(messages, submit_opts, false).await?;
-    println!("Signature: {signature:?}");
+    let signatures = client.sign_and_submit(messages, submit_opts, false).await?;
+    println!("WebSocket Signature: {signatures:?}");
+
+    client.close().await?;
     Ok(())
 }
 
 #[tokio::test]
 #[ignore]
-async fn test_add_memo_to_serialized_tx() -> anyhow::Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+async fn test_add_memo_to_serialized_tx_ws() -> anyhow::Result<()> {
+    let client = WebSocketClient::new(None).await?;
     let lamports_to_transfer = 2000;
 
     let pubkey = client.keypair.as_ref().unwrap().pubkey();
     let client_pubkey = client.public_key.unwrap();
 
-    let transfer_instruction =
-        system_instruction::transfer(&pubkey, &client_pubkey, lamports_to_transfer);
-
+    let transfer_instruction = system_instruction::transfer(&pubkey, &client_pubkey, lamports_to_transfer);
     let mut transaction = Transaction::new_with_payer(&[transfer_instruction], Some(&pubkey));
 
     let message_data = transaction.message.serialize();
@@ -87,13 +83,11 @@ async fn test_add_memo_to_serialized_tx() -> anyhow::Result<()> {
         let memo_program = Pubkey::from_str(TRADER_API_MEMO_PROGRAM)?;
         message.account_keys.push(memo_program);
 
-        message
-            .instructions
-            .push(CompiledInstruction::new_from_raw_parts(
-                (message.account_keys.len() - 1) as u8,
-                MEMO_MESSAGE.as_bytes().to_vec(),
-                vec![],
-            ));
+        message.instructions.push(CompiledInstruction::new_from_raw_parts(
+            (message.account_keys.len() - 1) as u8,
+            MEMO_MESSAGE.as_bytes().to_vec(),
+            vec![],
+        ));
     }
 
     let content = bincode::serialize(&deserialized_tx)?;
@@ -107,8 +101,10 @@ async fn test_add_memo_to_serialized_tx() -> anyhow::Result<()> {
         ..Default::default()
     };
 
-    let signature = client.sign_and_submit(messages, submit_opts, false).await?;
-    println!("Signature: {signature:?}");
+    let signatures = client.sign_and_submit(messages, submit_opts, false).await?;
+    println!("WebSocket Signature: {signatures:?}");
+
+    client.close().await?;
     Ok(())
 }
 

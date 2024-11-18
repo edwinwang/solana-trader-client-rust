@@ -24,9 +24,9 @@ use crate::{
 use super::utils::IntoTransactionMessage;
 
 pub struct HTTPClient {
-    client: Client,
+    pub client: Client,
     base_url: String,
-    keypair: Option<Keypair>,
+    pub keypair: Option<Keypair>,
     pub public_key: Option<Pubkey>,
 }
 
@@ -76,8 +76,6 @@ impl HTTPClient {
         }
 
         let res = response.text().await?;
-
-        println!("{:?}", res);
 
         let mut value = serde_json::from_str(&res)
             .map_err(|e| anyhow::anyhow!("Failed to parse response as JSON: {}", e))?;

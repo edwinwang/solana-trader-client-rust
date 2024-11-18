@@ -25,7 +25,7 @@ pub struct WebSocketConfig {
 
 pub struct WebSocketClient {
     conn: WS,
-    keypair: Option<Keypair>,
+    pub keypair: Option<Keypair>,
     pub public_key: Option<Pubkey>,
 }
 

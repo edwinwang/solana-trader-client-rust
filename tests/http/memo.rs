@@ -1,3 +1,4 @@
+// memo_http.rs
 use base64::engine::general_purpose;
 use base64::Engine;
 use solana_hash::Hash;
@@ -8,7 +9,7 @@ use solana_sdk::signature::{Signature, Signer};
 use solana_sdk::system_instruction;
 use solana_sdk::transaction::{Transaction, VersionedTransaction};
 use solana_trader_client_rust::common::signing::SubmitParams;
-use solana_trader_client_rust::provider::grpc::GrpcClient;
+use solana_trader_client_rust::provider::http::HTTPClient;
 use solana_trader_proto::api::{GetRecentBlockHashRequestV2, TransactionMessage};
 use std::str::FromStr;
 
@@ -18,15 +19,15 @@ const MEMO_MESSAGE: &str = "Powered by bloXroute Trader Api";
 
 #[tokio::test]
 #[ignore]
-async fn test_add_memo_to_tx() -> anyhow::Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+async fn test_add_memo_to_tx_http() -> anyhow::Result<()> {
+    let client = HTTPClient::new(None)?;
     let lamports_to_transfer = 1_000_000;
 
     let pubkey = client.public_key.unwrap();
     let jito_tip_wallet = Pubkey::from_str(JITO_TIP_WALLET)?;
 
     let block_hash = client
-        .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
+        .get_recent_block_hash_v2(&GetRecentBlockHashRequestV2 { offset: 0 })
         .await?
         .block_hash
         .parse::<Hash>()?;
@@ -57,15 +58,15 @@ async fn test_add_memo_to_tx() -> anyhow::Result<()> {
     }];
 
     let submit_opts = SubmitParams::default();
-    let signature = client.sign_and_submit(messages, submit_opts, false).await?;
-    println!("Signature: {signature:?}");
+    let signatures = client.sign_and_submit(messages, submit_opts, false).await?;
+    println!("HTTP Signature: {signatures:?}");
     Ok(())
 }
 
 #[tokio::test]
 #[ignore]
-async fn test_add_memo_to_serialized_tx() -> anyhow::Result<()> {
-    let mut client = GrpcClient::new(None).await?;
+async fn test_add_memo_to_serialized_tx_http() -> anyhow::Result<()> {
+    let client = HTTPClient::new(None)?;
     let lamports_to_transfer = 2000;
 
     let pubkey = client.keypair.as_ref().unwrap().pubkey();
@@ -73,7 +74,6 @@ async fn test_add_memo_to_serialized_tx() -> anyhow::Result<()> {
 
     let transfer_instruction =
         system_instruction::transfer(&pubkey, &client_pubkey, lamports_to_transfer);
-
     let mut transaction = Transaction::new_with_payer(&[transfer_instruction], Some(&pubkey));
 
     let message_data = transaction.message.serialize();
@@ -107,8 +107,8 @@ async fn test_add_memo_to_serialized_tx() -> anyhow::Result<()> {
         ..Default::default()
     };
 
-    let signature = client.sign_and_submit(messages, submit_opts, false).await?;
-    println!("Signature: {signature:?}");
+    let signatures = client.sign_and_submit(messages, submit_opts, false).await?;
+    println!("HTTP Signature: {signatures:?}");
     Ok(())
 }
 
