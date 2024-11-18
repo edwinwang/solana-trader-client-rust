@@ -29,23 +29,23 @@ NETWORK=MAINNET
 REGION=NY
 ```
 
-### Vscode 
-Tests can also be ran/debugged on click with vscode. 
+### Vscode
+Tests can also be ran/debugged on click with vscode.
 Just add a `settings.json` inside the `.vscode` folder, paste this snippet, and fill in the auth key:
 
 ```json
 {
-    "rust-analyzer.runnables.extraEnv": {
-        "PRIVATE_KEY": "...",
-        "PUBLIC_KEY": "...",
-        "AUTH_HEADER": "...",
-        "NETWORK": "MAINNET",
-    },
-    "rust-analyzer.runnables.extraArgs": [
-        "--",
-        "--ignored",
-        "--nocapture"
-    ],
+  "rust-analyzer.runnables.extraEnv": {
+    "PRIVATE_KEY": "...",
+    "PUBLIC_KEY": "...",
+    "AUTH_HEADER": "...",
+    "NETWORK": "MAINNET",
+  },
+  "rust-analyzer.runnables.extraArgs": [
+    "--",
+    "--ignored",
+    "--nocapture"
+  ],
 }
 ```
 
@@ -57,7 +57,7 @@ Since these tests are networked, they have the ignore flag on by default:
 
 ```rust
     #[tokio::test]
-    #[ignore]
+#[ignore]
 ```
 
 So each test must be called individually:
@@ -82,3 +82,5 @@ Using the `test_case` crate tests are parametrized:
 // new test case
 #[test_case("BTC", "USDC", 0.1, 10 ; "BTC to USDC with 10% slippage")]
 ```
+
+run `cargo clippy --tests` after adding your tests, to resolve any potential issues 
