@@ -28,7 +28,7 @@ async fn test_get_transaction_ws(
         serde_json::to_string_pretty(&response)?
     );
     assert!(
-        response.slot.is_some(),
+        response.slot.is_one(),
         "Expected a slot in the tx response"
     );
 
