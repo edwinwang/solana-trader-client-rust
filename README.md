@@ -36,23 +36,6 @@ NETWORK=MAINNET
 REGION=NY
 ```
 
-```rust
-use solana_trader_client_rust::provider::{
-    grpc::GrpcClient, 
-    http::HTTPClient,
-    ws::WebSocketClient
-};
-
-// GRPC
-let grpc_client = GrpcClient::new(None).await?;
-
-// HTTP 
-let http_client = HTTPClient::new(None)?;
-
-// WebSocket
-let ws_client = WebSocketClient::new(None).await?;
-```
-
 A simple example:
 
 ```rust
