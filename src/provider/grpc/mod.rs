@@ -25,13 +25,13 @@ use solana_trader_proto::api::{
 use super::utils::IntoTransactionMessage;
 
 #[derive(Clone)]
-struct AuthInterceptor {
-    headers: HashMap<&'static str, String>,
-    enabled: bool,
+pub struct AuthInterceptor {
+    pub headers: HashMap<&'static str, String>,
+    pub enabled: bool,
 }
 
 impl AuthInterceptor {
-    fn new(auth_header: String, enabled: bool) -> Self {
+    pub fn new(auth_header: String, enabled: bool) -> Self {
         let mut headers = HashMap::new();
         headers.insert("authorization", auth_header);
         headers.insert("x-sdk", "rust-client".to_string());
@@ -42,7 +42,7 @@ impl AuthInterceptor {
 }
 
 impl Interceptor for AuthInterceptor {
-    fn call(
+    pub fn call(
         &mut self,
         mut request: tonic::Request<()>,
     ) -> std::result::Result<tonic::Request<()>, tonic::Status> {
