@@ -61,8 +61,8 @@ impl Interceptor for AuthInterceptor {
 
 #[derive(Debug)]
 pub struct GrpcClient {
-    client: api::api_client::ApiClient<InterceptedService<Channel, AuthInterceptor>>,
-    keypair: Option<Keypair>,
+    pub client: api::api_client::ApiClient<InterceptedService<Channel, AuthInterceptor>>,
+    pub keypair: Option<Keypair>,
     pub public_key: Option<Pubkey>,
 }
 
